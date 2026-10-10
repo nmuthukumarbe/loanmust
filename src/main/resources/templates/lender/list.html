@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Banks &amp; Rates</title></head>
+<body>
+<div layout:fragment="page-title">Banks &amp; Rates</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Banks &amp; Rates</h2>
+            <p class="text-sm text-slate-500">The lenders we place with, their schemes and today's rate card.</p>
+        </div>
+        <a th:if="${perms == null or perms.canAdd('lenders')}" th:href="@{/lenders/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add lender</a>
+    </div>
+
+    <div class="mb-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-start gap-3">
+        <i class="bi bi-exclamation-circle-fill text-amber-500 mt-0.5"></i>
+        <div>Rates are what the advisor quotes - re-confirm each scheme with the lender; schemes not confirmed for 30 days are flagged.</div>
+    </div>
+
+    <!-- Lender cards -->
+    <th:block th:if="${lenders.isEmpty()}">
+        <div class="card p-5 mb-6"><div th:replace="~{fragments/ui :: empty(icon='bi-bank', title='No lenders yet', hint='Add the banks and HFCs you work with, then their schemes.')}"></div></div>
+    </th:block>
+    <div th:unless="${lenders.isEmpty()}" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+        <a th:each="l : ${lenders}" th:href="@{'/lenders/' + ${enc.encode(l.id)}}"
+           class="card p-4 block hover:shadow-card transition" th:classappend="${l.active} ? '' : 'opacity-60'">
+            <div class="flex items-start gap-3">
+                <div class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-white text-xs font-bold"
+                     th:style="'background:' + ${l.brandColor}" th:text="${l.initials}">SBI</div>
+                <div class="min-w-0 flex-1">
+                    <p class="font-display font-bold truncate" th:text="${l.displayName}">Lender</p>
+                    <p class="text-xs text-slate-400 truncate" th:text="${l.typeLabel}">Private bank</p>
+                </div>
+                <span th:unless="${l.active}" class="badge badge-slate">Inactive</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-3 text-xs">
+                <span class="badge badge-brand" th:text="(${productCounts[l.id]} ?: 0) + ' schemes'">0 schemes</span>
+                <span th:if="${canSeeMoney and l.payoutPercent != null}" class="badge badge-emerald" th:text="'Payout ' + ${fmt.pct(l.payoutPercent)}">Payout</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 truncate" th:if="${l.rmName}">
+                <i class="bi bi-person-badge"></i> <span th:text="${l.rmName}">RM</span>
+                <span th:if="${l.rmMobile}" th:text="' · ' + ${l.rmMobile}"></span>
+            </p>
+            <p class="text-xs text-slate-300 mt-3" th:unless="${l.rmName}">No RM recorded</p>
+        </a>
+    </div>
+
+    <!-- Rate card -->
+    <div class="card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+                <h3 class="font-display font-bold">Rate card</h3>
+                <p class="text-xs text-slate-400">Every active scheme side by side. Click a row to open the lender.</p>
+            </div>
+            <a th:if="${loanType == null}" th:href="@{/lenders/rates/export}" class="btn btn-outline btn-sm">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export</a>
+            <a th:if="${loanType != null}" th:href="@{/lenders/rates/export(loanType=${loanType.name()})}" class="btn btn-outline btn-sm">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export</a>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+            <a th:href="@{/lenders}" th:classappend="${loanType == null} ? 'chip-active' : 'chip'">All loans</a>
+            <a th:each="t : ${loanTypes}" th:href="@{/lenders(loanType=${t.name()})}"
+               th:classappend="${loanType != null and loanType.name() == t.name()} ? 'chip-active' : 'chip'" th:text="${t.label}">Home loan</a>
+        </div>
+
+        <th:block th:if="${rateCard.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-percent', title='No schemes for this loan type', hint='Open a lender and add its schemes to build the rate card.')}"></div></th:block>
+
+        <div th:unless="${rateCard.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Lender</th><th>Scheme</th><th>Loan type</th><th>Rate</th><th>Women</th>
+                    <th>Proc. fee</th><th>Max tenure</th><th>LTV</th><th>FOIR</th><th>Min CIBIL</th><th>Rate confirmed</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${rateCard}" class="table-row cursor-pointer" th:data-href="@{'/lenders/' + ${enc.encode(p.lenderId)}}">
+                    <td class="font-semibold whitespace-nowrap" th:text="${p.lenderName}">Lender</td>
+                    <td>
+                        <p class="text-sm" th:text="${p.name}">Scheme</p>
+                        <p class="text-[11px] text-slate-400" th:if="${p.rateType != null}"
+                           th:text="${p.rateType.label} + (${p.benchmark} != null ? ' · ' + ${p.benchmark} : '')">Floating</p>
+                    </td>
+                    <td class="text-sm text-slate-600 whitespace-nowrap" th:text="${p.loanTypeLabel}">Home loan</td>
+                    <td class="font-semibold text-brand-700 whitespace-nowrap" th:text="${p.rateRange}">8.5%</td>
+                    <td class="text-sm whitespace-nowrap" th:text="${p.womenConcession != null and p.womenConcession.signum() > 0} ? '−' + ${fmt.pct(p.womenConcession)} : '—'">—</td>
+                    <td class="text-sm" th:text="${fmt.pct(p.processingFeePercent)}">0.5%</td>
+                    <td class="text-sm whitespace-nowrap" th:text="${p.maxTenureYears != null} ? ${p.maxTenureYears} + ' yrs' : '—'">30 yrs</td>
+                    <td class="text-sm" th:text="${fmt.pct(p.maxLtvPercent)}">80%</td>
+                    <td class="text-sm" th:text="${fmt.pct(p.maxFoirPercent)}">55%</td>
+                    <td class="text-sm" th:text="${p.minCibil} ?: '—'">700</td>
+                    <td class="whitespace-nowrap text-sm">
+                        <span th:if="${p.rateUpdatedOn}" th:text="${#temporals.format(p.rateUpdatedOn,'dd MMM yyyy')}">date</span>
+                        <span th:if="${p.rateStale}" class="badge badge-amber ml-1" title="Not confirmed in the last 30 days">Re-confirm</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

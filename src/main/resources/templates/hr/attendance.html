@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Attendance</title></head>
+<body>
+<div layout:fragment="page-title">Attendance</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Attendance</h2>
+            <p class="text-sm text-slate-500">Mark the day sheet each morning; the monthly register and paid days build themselves.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/employees}" class="btn btn-outline"><i class="bi bi-person-vcard"></i> Employees</a>
+        </div>
+    </div>
+
+    <!-- ===== Day sheet ===== -->
+    <div class="card p-5 mb-6">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+                <h3 class="font-display font-bold">Day sheet</h3>
+                <p class="text-sm text-slate-500" th:text="${#temporals.format(date,'EEEE, dd MMMM yyyy')}">date</p>
+            </div>
+            <form th:action="@{/attendance}" method="get" class="flex items-end gap-2">
+                <div>
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" th:value="${date}" class="form-input" onchange="this.form.submit()"/>
+                </div>
+                <button type="submit" class="btn btn-outline"><i class="bi bi-arrow-right"></i> Go</button>
+            </form>
+        </div>
+
+        <th:block th:if="${employees.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-person-vcard', title='No active employees', hint='Add employees first, then mark their attendance here.')}"></div></th:block>
+
+        <form th:unless="${employees.isEmpty()}" th:action="@{/attendance/save}" method="post" id="daySheet">
+            <input type="hidden" name="date" th:value="${date}"/>
+
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <button type="button" id="markAllPresent" class="btn btn-outline btn-sm"><i class="bi bi-check2-all"></i> Mark all present</button>
+                <span class="text-xs text-slate-400">Rows left on "Not marked" are skipped when you save.</span>
+            </div>
+
+            <div class="overflow-x-auto -mx-5 px-5">
+                <table class="w-full">
+                    <thead class="table-head">
+                    <tr><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th>Remarks</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="e : ${employees}" class="table-row" th:with="m=${marks[e.id]}">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold"
+                                     th:text="${e.initials}">EM</div>
+                                <div class="min-w-0">
+                                    <p class="font-semibold truncate" th:text="${e.name}">Name</p>
+                                    <p class="text-xs text-slate-400" th:text="${e.designation} ?: ${e.code}">Designation</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="min-w-[9rem]">
+                            <select th:name="'status_' + ${e.id}" class="form-select" data-att-status>
+                                <option value="">Not marked</option>
+                                <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                                        th:selected="${m != null and m.status != null and m.status.name() == s.name()}">Present</option>
+                            </select>
+                        </td>
+                        <td><input type="time" th:name="'in_' + ${e.id}" th:value="${m != null} ? ${m.checkIn} : ''" class="form-input w-28"/></td>
+                        <td><input type="time" th:name="'out_' + ${e.id}" th:value="${m != null} ? ${m.checkOut} : ''" class="form-input w-28"/></td>
+                        <td class="min-w-[12rem]"><input type="text" th:name="'remarks_' + ${e.id}" th:value="${m != null} ? ${m.remarks} : ''" class="form-input" placeholder="Optional"/></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center gap-3 mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save day sheet</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== Month register ===== -->
+    <div class="card p-5">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+                <h3 class="font-display font-bold">Monthly register</h3>
+                <p class="text-sm text-slate-500" th:text="${monthLabel}">Month</p>
+            </div>
+            <form th:action="@{/attendance}" method="get" class="flex items-end gap-2">
+                <input type="hidden" name="date" th:value="${date}"/>
+                <div>
+                    <label class="form-label">Month</label>
+                    <input type="month" name="month" th:value="${month}" class="form-input" onchange="this.form.submit()"/>
+                </div>
+                <button type="submit" class="btn btn-outline"><i class="bi bi-arrow-right"></i> Go</button>
+            </form>
+        </div>
+
+        <div class="flex flex-wrap gap-3 text-xs text-slate-500 mb-3">
+            <span th:each="s : ${statuses}" class="inline-flex items-center gap-1">
+                <span class="badge" th:classappend="'badge-' + ${s.tone}" th:text="${s.shortCode}">P</span>
+                <span th:text="${s.label}">Present</span>
+            </span>
+        </div>
+
+        <th:block th:if="${monthRows.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-calendar3', title='Nothing recorded this month', hint='Attendance you mark on the day sheet appears here.')}"></div></th:block>
+
+        <div th:unless="${monthRows.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="text-xs border-collapse">
+                <thead class="table-head">
+                <tr>
+                    <th class="sticky left-0 bg-white z-10 min-w-[10rem] text-left">Employee</th>
+                    <th th:each="d : ${#numbers.sequence(1, daysInMonth)}" class="text-center px-1 min-w-[1.75rem]" th:text="${d}">1</th>
+                    <th th:each="s : ${statuses}" class="text-center px-1.5" th:text="${s.shortCode}" th:title="${s.label}">P</th>
+                    <th class="text-right px-2">Paid days</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${monthRows}" class="table-row">
+                    <td class="sticky left-0 bg-white z-10">
+                        <p class="font-semibold text-sm whitespace-nowrap" th:text="${row.employee().name}">Name</p>
+                        <p class="text-[11px] text-slate-400" th:text="${row.employee().code}">EMP-0001</p>
+                    </td>
+                    <td th:each="d : ${#numbers.sequence(1, daysInMonth)}" class="text-center px-0.5"
+                        th:with="c=${row.days().get(d)}">
+                        <span th:if="${c != null}" class="inline-grid place-items-center h-6 w-6 rounded-md font-semibold"
+                              th:classappend="${c == 'P'} ? 'bg-emerald-100 text-emerald-700' : (${c == 'H'} ? 'bg-amber-100 text-amber-700' : (${c == 'F'} ? 'bg-brand-100 text-brand-700' : (${c == 'L'} ? 'bg-violet-100 text-violet-700' : (${c == 'A'} ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'))))"
+                              th:text="${c}">P</span>
+                        <span th:if="${c == null}" class="text-slate-200">·</span>
+                    </td>
+                    <td th:each="s : ${statuses}" class="text-center px-1.5 font-medium"
+                        th:classappend="${row.counts().get(s) == 0} ? 'text-slate-300' : ''"
+                        th:text="${row.counts().get(s)}">0</td>
+                    <td class="text-right px-2 font-display font-bold text-sm" th:text="${#numbers.formatDecimal(row.paidDays(), 1, 1)}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Paid days count present, field work, leave and holidays as a full day and a half day as 0.5.</p>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        (function () {
+            var btn = document.getElementById('markAllPresent');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('select[data-att-status]').forEach(function (s) { s.value = 'PRESENT'; });
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

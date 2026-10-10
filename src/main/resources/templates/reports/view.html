@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${report.title}">Report</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${report.title}">Report</div>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Reports', parentUrl='/reports', current=${report.title})}"></div>
+
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+        <div>
+            <div class="flex flex-wrap items-center gap-2">
+                <h2 class="font-display font-bold text-xl" th:text="${table.title()} ?: ${report.title}">Report</h2>
+                <span th:if="${report.money}" class="badge badge-emerald"><i class="bi bi-currency-rupee"></i> Money</span>
+            </div>
+            <p class="text-sm text-slate-500" th:text="${report.description}">Description</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/reports}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> All reports</a>
+            <a th:href="@{'/reports/' + ${report.key} + '/export'(from=${from},to=${to})}" class="btn btn-outline">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export to Excel</a>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <form th:if="${report.dated}" th:action="@{'/reports/' + ${report.key}}" method="get" class="flex flex-wrap items-end gap-2 mb-4">
+            <div>
+                <label class="form-label">From</label>
+                <input type="date" name="from" th:value="${from}" class="form-input"/>
+            </div>
+            <div>
+                <label class="form-label">To</label>
+                <input type="date" name="to" th:value="${to}" class="form-input"/>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            <a th:href="@{'/reports/' + ${report.key}}" class="btn btn-ghost">This month</a>
+        </form>
+
+        <div class="flex items-center justify-between mb-3 text-sm">
+            <p class="text-slate-500">
+                <span class="font-semibold text-slate-700" th:text="${table.isEmpty()} ? 0 : ${table.rows().size()}">0</span> row(s)
+                <span th:if="${report.dated and from != null and to != null}"
+                      th:text="' · ' + ${#temporals.format(from,'dd MMM yyyy')} + ' – ' + ${#temporals.format(to,'dd MMM yyyy')}"></span>
+                <span th:unless="${report.dated}"> · as of today</span>
+            </p>
+        </div>
+
+        <th:block th:if="${table.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-table', title='Nothing to report', hint='No records match this report for the selected period.')}"></div></th:block>
+
+        <div th:unless="${table.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-sm">
+                <thead class="table-head">
+                <tr><th th:each="h : ${table.headers()}" class="whitespace-nowrap" th:text="${h}">Header</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${table.rows()}" class="table-row">
+                    <td th:each="cell : ${row}" class="whitespace-nowrap">
+                        <span th:if="${cell != null}" th:text="${cell}">value</span>
+                        <span th:if="${cell == null}" class="text-slate-300">—</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${builder.name}">Builder</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${builder.name}">Builder</div>
+
+<div layout:fragment="content">
+<th:block th:with="bTok=${enc.encode(builder.id)}">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Builders', parentUrl='/builders', current=${builder.name})}"></div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="h-14 w-14 shrink-0 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center text-xl">
+                            <i class="bi bi-buildings"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="font-display font-bold text-xl" th:text="${builder.name}">Builder</h2>
+                            <p class="text-sm text-slate-500" th:text="${builder.city} ?: 'City not set'">City</p>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="badge" th:classappend="${builder.active} ? 'badge-emerald' : 'badge-slate'"
+                                      th:text="${builder.active} ? 'Active tie-up' : 'Inactive'">Active</span>
+                                <span class="badge badge-slate" th:text="${projects.size()} + ' projects'">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:href="@{'/builders/' + ${bTok} + '/edit'}" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+                        <a th:if="${perms == null or perms.canAdd('leads')}" th:href="@{/leads/new(builderId=${bTok})}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Add lead from this builder</a>
+                        <form th:if="${perms == null or perms.canDelete('builders')}" th:action="@{'/builders/' + ${bTok} + '/archive'}" method="post"
+                              data-confirm="Archive this builder? Their projects and history stay in the records.">
+                            <button type="submit" class="btn btn-danger" title="Archive"><i class="bi bi-archive"></i></button>
+                        </form>
+                    </div>
+                </div>
+
+                <dl class="grid sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Contact person</dt><dd class="font-medium" th:text="${builder.contactPerson} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Mobile</dt>
+                        <dd class="font-medium"><a th:if="${builder.mobile}" th:href="'tel:' + ${builder.mobile}" class="hover:text-brand-700" th:text="${builder.mobile}">—</a>
+                            <span th:unless="${builder.mobile}">—</span></dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Email</dt><dd class="font-medium break-all" th:text="${builder.email} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Tie-up since</dt>
+                        <dd class="font-medium" th:text="${builder.tieUpSince != null} ? ${#temporals.format(builder.tieUpSince,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div class="sm:col-span-2"><dt class="text-slate-400 text-xs uppercase tracking-wide">Arrangement</dt><dd class="font-medium" th:text="${builder.arrangement} ?: '—'">—</dd></div>
+                    <div class="sm:col-span-3" th:if="${builder.address}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Address</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${builder.address}">—</dd></div>
+                    <div class="sm:col-span-3" th:if="${builder.notes}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Notes</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${builder.notes}">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Projects -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+                    <h3 class="font-display font-bold">Projects</h3>
+                    <a th:href="@{'/builders/' + ${bTok} + '/projects/new'}" class="btn btn-outline btn-sm"><i class="bi bi-plus-lg"></i> Add project</a>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Approved lenders (APF) clear legal and technical checks faster for buyers in the project.</p>
+                <p th:if="${projects.isEmpty()}" class="text-sm text-slate-400">No projects listed yet.</p>
+                <div th:unless="${projects.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Project</th><th>Status</th><th>Price range</th><th>Approved lenders</th><th>Possession</th><th class="text-right">Actions</th></tr></thead>
+                        <tbody>
+                        <tr th:each="p : ${projects}" class="table-row">
+                            <td>
+                                <p class="font-semibold" th:text="${p.name}">Project</p>
+                                <p class="text-xs text-slate-400">
+                                    <span th:text="${p.location} ?: (${p.city} ?: '')">Location</span>
+                                    <span th:if="${p.projectType}" th:text="' · ' + ${p.projectType}"></span>
+                                    <span th:if="${p.reraNumber}" th:text="' · RERA ' + ${p.reraNumber}"></span>
+                                </p>
+                            </td>
+                            <td><span class="badge" th:classappend="'badge-' + ${p.statusTone}" th:text="${p.statusLabel}">Status</span></td>
+                            <td class="whitespace-nowrap text-sm">
+                                <span th:if="${p.priceFrom != null or p.priceTo != null}"
+                                      th:text="'₹' + ${fmt.lakhs(p.priceFrom)} + ' – ₹' + ${fmt.lakhs(p.priceTo)}">₹45 L – ₹90 L</span>
+                                <span th:unless="${p.priceFrom != null or p.priceTo != null}" class="text-slate-300">—</span>
+                            </td>
+                            <td>
+                                <div class="flex flex-wrap gap-1 max-w-[16rem]">
+                                    <span th:each="l : ${p.approvedLenderList}" class="badge badge-brand" th:text="${l}">SBI</span>
+                                    <span th:if="${p.approvedLenderList.isEmpty()}" class="text-xs text-slate-300">None recorded</span>
+                                </div>
+                            </td>
+                            <td class="whitespace-nowrap text-sm" th:text="${p.possessionDate != null} ? ${#temporals.format(p.possessionDate,'MMM yyyy')} : '—'">—</td>
+                            <td class="text-right whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1">
+                                    <a th:href="@{'/builders/projects/' + ${enc.encode(p.id)} + '/edit'}" class="inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    <form th:action="@{'/builders/projects/' + ${enc.encode(p.id)} + '/archive'}" method="post" class="inline"
+                                          data-confirm="Archive this project?">
+                                        <button type="submit" class="inline-grid place-items-center h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" title="Archive"><i class="bi bi-archive"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loan files -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Loan files</h3>
+                    <span class="badge badge-slate" th:text="${applications.size()}">0</span>
+                </div>
+                <p th:if="${applications.isEmpty()}" class="text-sm text-slate-400">No loan files from this builder's buyers yet.</p>
+                <div th:unless="${applications.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>File</th><th>Project</th><th>Lender</th><th class="text-right">Amount</th><th>Stage</th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${applications}" class="table-row cursor-pointer" th:data-href="@{'/applications/' + ${enc.encode(a.id)}}">
+                            <td><p class="font-semibold" th:text="${a.customerName}">Customer</p>
+                                <p class="text-xs text-slate-400" th:text="${a.code}">LA-0001</p></td>
+                            <td class="text-sm text-slate-600" th:text="${a.projectName} ?: '—'">—</td>
+                            <td class="text-sm text-slate-600" th:text="${a.lenderName} ?: '—'">—</td>
+                            <td class="text-right whitespace-nowrap font-semibold" th:text="'₹' + ${fmt.lakhs(a.loanAmount)}">₹0</td>
+                            <td><span class="badge" th:classappend="'badge-' + ${a.stageTone}" th:text="${a.stageLabel}">Stage</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Leads -->
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Leads</h3>
+                    <span class="badge badge-slate" th:text="${leads.size()}">0</span>
+                </div>
+                <p th:if="${leads.isEmpty()}" class="text-sm text-slate-400">No enquiries from this builder yet.</p>
+                <div th:unless="${leads.isEmpty()}" class="space-y-2">
+                    <a th:each="l : ${leads}" th:href="@{'/leads/' + ${enc.encode(l.id)}}"
+                       class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50">
+                        <div class="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold"
+                             th:text="${l.initials}">LD</div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium truncate" th:text="${l.name}">Name</p>
+                            <p class="text-xs text-slate-400 truncate">
+                                <span th:text="${l.code}">LD-0001</span>
+                                <span th:if="${l.projectName}" th:text="' · ' + ${l.projectName}"></span>
+                            </p>
+                        </div>
+                        <span class="badge" th:classappend="'badge-' + ${l.statusTone}" th:text="${l.statusLabel}">New</span>
+                    </a>
+                </div>
+            </div>
+
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</th:block>
+</div>
+</body>
+</html>

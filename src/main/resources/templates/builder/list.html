@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Builders</title></head>
+<body>
+<div layout:fragment="page-title">Builders</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Builder tie-ups</h2>
+            <p class="text-sm text-slate-500">Developers who send us buyers, their projects and the business each one brings.</p>
+        </div>
+        <a th:if="${perms == null or perms.canAdd('builders')}" th:href="@{/builders/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add builder</a>
+    </div>
+
+    <th:block th:if="${builders.isEmpty()}">
+        <div class="card p-5"><div th:replace="~{fragments/ui :: empty(icon='bi-buildings', title='No builders yet', hint='Add a builder you have a tie-up with, then list their projects.')}"></div></div>
+    </th:block>
+
+    <div th:unless="${builders.isEmpty()}" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <a th:each="b : ${builders}" th:href="@{'/builders/' + ${enc.encode(b.id)}}"
+           class="card p-5 block hover:shadow-card transition" th:classappend="${b.active} ? '' : 'opacity-70'">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="h-11 w-11 shrink-0 rounded-xl bg-brand-100 text-brand-700 grid place-items-center text-lg">
+                        <i class="bi bi-buildings"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-display font-bold truncate" th:text="${b.name}">Builder</p>
+                        <p class="text-xs text-slate-400 truncate" th:text="${b.city} ?: 'City not set'">City</p>
+                    </div>
+                </div>
+                <span class="badge" th:classappend="${b.active} ? 'badge-emerald' : 'badge-slate'" th:text="${b.active} ? 'Active' : 'Inactive'">Active</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                <div class="rounded-lg bg-slate-50 py-2">
+                    <p class="font-display font-bold" th:text="${projectCounts[b.id]} ?: 0">0</p>
+                    <p class="text-[11px] text-slate-500">Projects</p>
+                </div>
+                <div class="rounded-lg bg-slate-50 py-2">
+                    <p class="font-display font-bold" th:text="${fileCounts[b.id]} ?: 0">0</p>
+                    <p class="text-[11px] text-slate-500">Loan files</p>
+                </div>
+                <div class="rounded-lg bg-slate-50 py-2">
+                    <p class="font-display font-bold text-emerald-600" th:text="'₹' + ${fmt.lakhs(disbursed[b.id])}">₹0</p>
+                    <p class="text-[11px] text-slate-500">Disbursed</p>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-1">
+                <p class="truncate"><i class="bi bi-person"></i> <span th:text="${b.contactPerson} ?: 'No contact person'">Contact</span>
+                    <span th:if="${b.mobile}" th:text="' · ' + ${b.mobile}"></span></p>
+                <p th:if="${b.arrangement}" class="truncate"><i class="bi bi-link-45deg"></i> <span th:text="${b.arrangement}">Arrangement</span></p>
+                <p th:if="${b.tieUpSince}"><i class="bi bi-calendar-check"></i> Tie-up since <span th:text="${#temporals.format(b.tieUpSince,'MMM yyyy')}">date</span></p>
+            </div>
+        </a>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${builder.id == null} ? 'Add builder' : 'Edit builder'">Builder</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${builder.id == null} ? 'Add builder' : 'Edit builder'">Builder</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Builders', parentUrl='/builders', current=${builder.id == null ? 'New builder' : builder.name})}"></div>
+
+        <form th:action="@{/builders/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${builder.id}"/>
+
+            <div>
+                <h3 class="font-display font-bold mb-4">Builder</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Builder / developer name</label>
+                        <input type="text" name="name" th:value="${builder.name}" required class="form-input" placeholder="e.g. Shree Ganesh Developers"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Contact person</label>
+                        <input type="text" name="contactPerson" th:value="${builder.contactPerson}" class="form-input" placeholder="Sales head / CRM manager"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='mobile', value=${builder.mobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" th:value="${builder.email}" class="form-input" placeholder="name@example.com"/>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${builder.city}" class="form-input"/>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Office address</label>
+                        <textarea name="address" rows="2" class="form-textarea" th:text="${builder.address}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Tie-up</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Tie-up since</label>
+                        <input type="date" name="tieUpSince" th:value="${builder.tieUpSince}" class="form-input"/>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium pb-2.5">
+                            <input type="checkbox" name="active" value="true" th:checked="${builder.active}" class="rounded"/>
+                            <input type="hidden" name="_active" value="on"/>
+                            Active tie-up
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Arrangement</label>
+                        <input type="text" name="arrangement" th:value="${builder.arrangement}" class="form-input"
+                               placeholder="e.g. Desk at site office on weekends; all buyers referred to us"/>
+                        <p class="text-[11px] text-slate-400 mt-1">How buyers reach us and anything agreed with the builder.</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" rows="3" class="form-textarea" th:text="${builder.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save builder</button>
+                <a th:href="@{/builders}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Pagination. Usage:
+     <div th:replace="~{fragments/ui :: pager(page=${leadPage}, base='/leads')}"></div> -->
+<nav th:fragment="pager(page, base)" th:if="${page != null and page.totalPages > 1}"
+     class="flex items-center justify-between mt-4 text-sm">
+    <span class="text-slate-400">
+        Showing <span th:text="${page.numberOfElements}">10</span>
+        of <span th:text="${page.totalElements}">0</span>
+    </span>
+    <div class="flex items-center gap-2">
+        <a th:href="@{${base}(page=${page.number - 1})}"
+           th:classappend="${page.first} ? 'pointer-events-none opacity-40' : ''"
+           class="h-9 w-9 grid place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <span class="text-slate-500">Page <span th:text="${page.number + 1}">1</span> of <span th:text="${page.totalPages}">1</span></span>
+        <a th:href="@{${base}(page=${page.number + 1})}"
+           th:classappend="${page.last} ? 'pointer-events-none opacity-40' : ''"
+           class="h-9 w-9 grid place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+</nav>
+
+<!-- International phone input. Usage:
+     <div th:replace="~{fragments/ui :: phone(name='mobile', value=${lead.mobile})}"></div> -->
+<div th:fragment="phone(name, value)" class="phone-group" th:attr="data-value=${value}">
+    <div class="flex gap-2">
+        <select class="phone-cc form-select w-32 shrink-0">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+880">🇧🇩 +880</option>
+            <option value="+977">🇳🇵 +977</option>
+            <option value="+94">🇱🇰 +94</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+1">🇺🇸 +1</option>
+        </select>
+        <input type="tel" class="phone-num form-input" placeholder="Mobile number" autocomplete="off"/>
+    </div>
+    <input type="hidden" th:name="${name}" th:value="${value}"/>
+</div>
+
+<!-- Breadcrumb. Usage:
+     <div th:replace="~{fragments/ui :: crumbs(parent='Leads', parentUrl='/leads', current=${lead.name})}"></div> -->
+<nav th:fragment="crumbs(parent, parentUrl, current)" class="flex items-center gap-2 text-sm text-slate-400 mb-4">
+    <a th:href="@{/dashboard}" class="hover:text-brand-700">Dashboard</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <a th:href="@{${parentUrl}}" class="hover:text-brand-700" th:text="${parent}">Section</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-slate-600 font-medium truncate" th:text="${current}">Record</span>
+</nav>
+
+<!-- Audit history panel. Usage:
+     <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div> -->
+<div th:fragment="audit(trail)" class="card p-5">
+    <h3 class="font-display font-bold mb-4 flex items-center gap-2">
+        <i class="bi bi-shield-lock text-slate-400"></i> Audit history
+    </h3>
+    <p th:if="${trail == null or trail.isEmpty()}" class="text-sm text-slate-400">
+        Nothing recorded yet. Changes to this record will appear here.
+    </p>
+    <div th:unless="${trail == null or trail.isEmpty()}" class="timeline space-y-4">
+        <div th:each="a : ${trail}" class="relative">
+            <span class="timeline-dot" style="top:.2rem"></span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="badge" th:classappend="'badge-' + ${a.tone}" th:text="${a.action}">UPDATE</span>
+                <span class="text-sm font-medium" th:if="${a.fieldName}" th:text="${a.fieldName}">Field</span>
+                <span class="text-xs text-slate-400"
+                      th:text="${#temporals.format(a.createdAt,'dd MMM yyyy, HH:mm')}">date</span>
+            </div>
+            <p class="text-sm text-slate-600 mt-1" th:if="${a.newValue != null and !a.newValue.isEmpty()}">
+                <span class="line-through text-slate-400" th:if="${a.oldValue != null and !a.oldValue.isEmpty()}" th:text="${a.oldValue}">old</span>
+                <i class="bi bi-arrow-right text-xs text-slate-400" th:if="${a.oldValue != null and !a.oldValue.isEmpty()}"></i>
+                <span class="font-medium" th:text="${a.newValue}">new</span>
+            </p>
+            <p class="text-sm text-slate-600 mt-1" th:if="${a.remarks}" th:text="${a.remarks}">remarks</p>
+            <p class="text-xs text-slate-400 mt-0.5" th:text="${a.userName} ?: ${a.userEmail}">user</p>
+        </div>
+    </div>
+</div>
+
+<!-- Communication history. Usage:
+     <div th:replace="~{fragments/ui :: comms(logs=${communications})}"></div> -->
+<div th:fragment="comms(logs)" class="card p-5">
+    <h3 class="font-display font-bold mb-4 flex items-center gap-2">
+        <i class="bi bi-chat-left-dots text-slate-400"></i> Communication history
+    </h3>
+    <p th:if="${logs == null or logs.isEmpty()}" class="text-sm text-slate-400">
+        No messages sent yet.
+    </p>
+    <div th:unless="${logs == null or logs.isEmpty()}" class="space-y-3">
+        <div th:each="c : ${logs}" class="flex gap-3 items-start">
+            <div class="h-8 w-8 shrink-0 rounded-lg bg-slate-100 text-slate-500 grid place-items-center">
+                <i th:class="'bi ' + ${c.channel.icon}"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-medium" th:text="${c.event.label}">Event</span>
+                    <span class="badge" th:classappend="${c.failed} ? 'badge-rose' : 'badge-emerald'" th:text="${c.status}">SENT</span>
+                    <span class="text-xs text-slate-400" th:text="${#temporals.format(c.sentAt,'dd MMM, HH:mm')}">date</span>
+                </div>
+                <p class="text-sm text-slate-600 break-words" th:text="${c.content}">message</p>
+                <p class="text-xs text-slate-400" th:text="${c.recipient}">recipient</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty state. Usage:
+     <div th:replace="~{fragments/ui :: empty(icon='bi-people', title='No customers yet', hint='Add your first customer.')}"></div> -->
+<div th:fragment="empty(icon, title, hint)" class="text-center py-14 text-slate-400">
+    <i th:class="'bi ' + ${icon} + ' text-4xl'"></i>
+    <p class="mt-3 font-medium text-slate-500" th:text="${title}">Nothing here</p>
+    <p class="text-sm" th:text="${hint}">hint</p>
+</div>
+
+</body>
+</html>

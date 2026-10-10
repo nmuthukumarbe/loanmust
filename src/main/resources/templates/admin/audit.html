@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{fragments/layout}">
+<head><title>Audit Log</title></head>
+<body>
+<div layout:fragment="page-title">Audit Log</div>
+<div layout:fragment="content">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div><h2 class="font-display font-bold text-xl">Audit log</h2>
+            <p class="text-sm text-slate-500">Every change: who, when, and what the value was before.</p></div>
+        <a th:href="@{/audit/export}" class="btn btn-outline"><i class="bi bi-file-earmark-spreadsheet"></i> Export</a>
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/audit}" method="get" data-live-search class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 items-end">
+            <div class="lg:col-span-2">
+                <label class="form-label">Search</label>
+                <div class="relative">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="search" name="q" th:value="${q}" placeholder="Record, user or remark…" class="form-input w-full pl-9"/>
+                </div>
+            </div>
+            <div><label class="form-label">Record type</label>
+                <select name="entityType" class="form-select"><option value="">Any</option>
+                    <option th:each="t : ${entityTypes}" th:value="${t}" th:text="${t}" th:selected="${entityType == t}">Type</option></select></div>
+            <div><label class="form-label">Action</label>
+                <select name="action" class="form-select"><option value="">Any</option>
+                    <option th:each="a : ${actions}" th:value="${a}" th:text="${a}" th:selected="${action == a}">Action</option></select></div>
+            <div><label class="form-label">From</label><input type="date" name="from" th:value="${from}" class="form-input"/></div>
+            <div><label class="form-label">To</label><input type="date" name="to" th:value="${to}" class="form-input"/></div>
+            <div class="flex gap-2 lg:col-span-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+                <a th:href="@{/audit}" class="btn btn-ghost">Reset</a>
+            </div>
+        </form>
+
+        <th:block th:if="${logPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-shield-lock', title='Nothing recorded', hint='Changes made in the system will be logged here.')}"></div></th:block>
+
+        <div th:unless="${logPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head"><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Field</th><th>Old value</th><th>New value</th><th>Remarks</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${logPage.content}" class="table-row">
+                    <td class="text-xs whitespace-nowrap text-slate-500" th:text="${#temporals.format(a.createdAt,'dd MMM yy, HH:mm')}">date</td>
+                    <td class="text-sm" th:text="${a.userName} ?: ${a.userEmail}">user</td>
+                    <td><span class="badge" th:classappend="'badge-' + ${a.tone}" th:text="${a.action}">UPDATE</span></td>
+                    <td class="text-sm">
+                        <p class="font-medium" th:text="${a.entityLabel} ?: '—'">record</p>
+                        <p class="text-xs text-slate-400" th:text="${a.entityType}">Type</p>
+                    </td>
+                    <td class="text-sm text-slate-500" th:text="${a.fieldName} ?: '—'">—</td>
+                    <td class="text-xs text-slate-400 max-w-[10rem] truncate" th:text="${a.oldValue} ?: '—'">—</td>
+                    <td class="text-xs font-medium max-w-[10rem] truncate" th:text="${a.newValue} ?: '—'">—</td>
+                    <td class="text-xs text-slate-500 max-w-[14rem] truncate" th:text="${a.remarks} ?: '—'">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="~{fragments/ui :: pager(page=${logPage}, base='/audit')}"></div>
+    </div>
+</div>
+</body>
+</html>

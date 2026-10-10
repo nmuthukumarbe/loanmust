@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{fragments/layout}">
+<head><title>Users &amp; Roles</title></head>
+<body>
+<div layout:fragment="page-title">Users &amp; Roles</div>
+<div layout:fragment="content">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div><h2 class="font-display font-bold text-xl">Staff accounts</h2>
+            <p class="text-sm text-slate-500">Who can sign in, and what they're allowed to see.</p></div>
+        <a th:if="${perms == null or perms.canAdd('users')}" th:href="@{/admin/users/new}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add user</a>
+    </div>
+    <div class="card p-5">
+        <form th:action="@{/admin/users}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[15rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" placeholder="Search name or email…" class="form-input w-full pl-9"/>
+            </div>
+            <a th:href="@{/admin/users}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${userPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-person-badge', title='No users match', hint='Add your team so they can sign in.')}"></div></th:block>
+
+        <div th:unless="${userPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head"><tr><th>User</th><th>Role</th><th>Branch</th><th>Phone</th><th>Sign-in</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="u : ${userPage.content}" class="table-row">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold"
+                                 th:text="${u.initials}">U</div>
+                            <div class="min-w-0">
+                                <p class="font-semibold truncate" th:text="${u.fullName}">Name</p>
+                                <p class="text-xs text-slate-400 truncate" th:text="${u.email}">email</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-brand" th:text="${u.roleLabel}">Role</span></td>
+                    <td class="text-sm text-slate-500" th:text="${u.branch} ?: '—'">—</td>
+                    <td class="text-sm text-slate-500" th:text="${u.phone} ?: '—'">—</td>
+                    <td><span class="badge" th:classappend="${u.loginEnabled} ? 'badge-emerald' : 'badge-slate'"
+                              th:text="${u.loginEnabled} ? 'Allowed' : 'Blocked'">Allowed</span></td>
+                    <td><span class="badge" th:classappend="${u.enabled} ? 'badge-emerald' : 'badge-rose'"
+                              th:text="${u.enabled} ? 'Active' : 'Disabled'">Active</span></td>
+                    <td class="text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1">
+                            <a th:href="@{'/admin/users/' + ${enc.encode(u.id)} + '/edit'}" class="inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100"><i class="bi bi-pencil"></i></a>
+                            <form th:action="@{'/admin/users/' + ${enc.encode(u.id)} + '/archive'}" method="post" class="inline"
+                                  data-confirm="Archive this account? They will no longer be able to sign in.">
+                                <button type="submit" class="inline-grid place-items-center h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50"><i class="bi bi-archive"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="~{fragments/ui :: pager(page=${userPage}, base='/admin/users')}"></div>
+    </div>
+</div>
+</body>
+</html>

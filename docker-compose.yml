@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: loanmust_db
+      MARIADB_USER: loanmust
+      MARIADB_PASSWORD: ${DB_PASSWORD:-loanmustpass}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      TZ: Asia/Kolkata
+    ports:
+      - "3306:3306"
+    volumes:
+      - loanmust_db:/var/lib/mysql
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mariadb://db:3306/loanmust_db?useSSL=false&serverTimezone=Asia/Kolkata
+      DB_USERNAME: loanmust
+      DB_PASSWORD: ${DB_PASSWORD:-loanmustpass}
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost:8080}
+      # Set to true for a first look with a demo loan book.
+      DEMO_SEED_TRANSACTIONS: ${DEMO_SEED_TRANSACTIONS:-false}
+      TZ: Asia/Kolkata
+    ports:
+      - "8080:8080"
+    volumes:
+      - loanmust_documents:/app/storage-data
+
+volumes:
+  loanmust_db:
+  loanmust_documents:

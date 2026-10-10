@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Referral Payouts</title></head>
+<body>
+<div layout:fragment="page-title">Referral Payouts</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Referral payout desk</h2>
+            <p class="text-sm text-slate-500">Raised automatically when a referred loan disburses. A manager approves, finance pays and records the UTR.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/referrals}" class="btn btn-outline"><i class="bi bi-people"></i> Partners</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card stat-amber">
+            <i class="stat-ico bi bi-hourglass-split"></i>
+            <p class="stat-label">Pending approval</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(pendingTotal)}">₹0</p>
+        </div>
+        <div class="stat-card stat-brand">
+            <i class="stat-ico bi bi-check2-square"></i>
+            <p class="stat-label">Approved — to pay</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(approvedTotal)}">₹0</p>
+        </div>
+        <div class="stat-card stat-emerald">
+            <i class="stat-ico bi bi-send-check"></i>
+            <p class="stat-label">Paid to date</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(paidTotal)}">₹0</p>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <a th:href="@{/referral-payouts(q=${q})}" th:classappend="${status == null} ? 'chip-active' : 'chip'">All</a>
+            <a th:each="s : ${statuses}" th:href="@{/referral-payouts(status=${s.name()},q=${q})}"
+               th:classappend="${status != null and status.name() == s.name()} ? 'chip-active' : 'chip'"
+               th:text="${s.label}">Status</a>
+        </div>
+
+        <form th:action="@{/referral-payouts}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <input type="hidden" name="status" th:if="${status != null}" th:value="${status.name()}"/>
+            <div class="relative flex-1 min-w-[16rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search payout, partner, file or customer…" class="form-input w-full pl-9"/>
+            </div>
+            <a th:href="@{/referral-payouts}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${payoutPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-send-check', title='No payouts here', hint='Payouts are raised automatically when a referred loan disburses.')}"></div></th:block>
+
+        <div th:unless="${payoutPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Payout</th><th>Partner</th><th>File</th><th>Lender</th><th class="text-right">Disbursed</th>
+                    <th>Rule</th><th class="text-right">Gross</th><th class="text-right">TDS</th><th class="text-right">Net</th>
+                    <th>Status</th><th class="text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${payoutPage.content}" class="table-row cursor-pointer" th:data-href="@{'/referral-payouts/' + ${enc.encode(p.id)}}">
+                    <td class="font-semibold whitespace-nowrap" th:text="${p.code}">RP-0001</td>
+                    <td>
+                        <p class="font-medium" th:text="${p.partnerName}">Partner</p>
+                        <p class="text-xs text-slate-400" th:text="${p.partnerMobile}">mobile</p>
+                    </td>
+                    <td>
+                        <p class="text-sm font-medium whitespace-nowrap" th:text="${p.applicationCode} ?: '—'">LF-0001</p>
+                        <p class="text-xs text-slate-400" th:text="${p.customerName}">Customer</p>
+                    </td>
+                    <td class="text-sm" th:text="${p.lenderName} ?: '—'">Lender</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(p.disbursedAmount)}">₹0</td>
+                    <td class="text-xs text-slate-500 whitespace-nowrap">
+                        <th:block th:if="${p.payoutBasis != null and p.payoutBasis.name() == 'FLAT_PER_FILE'}">
+                            <span th:text="'₹' + ${fmt.inr(p.payoutValue)} + ' flat'">₹5,000 flat</span>
+                        </th:block>
+                        <th:block th:unless="${p.payoutBasis != null and p.payoutBasis.name() == 'FLAT_PER_FILE'}">
+                            <span th:text="${fmt.pct(p.payoutValue)} + ' of disbursal'">0.5% of disbursal</span>
+                        </th:block>
+                    </td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(p.grossAmount)}">₹0</td>
+                    <td class="text-right whitespace-nowrap text-slate-500" th:text="'₹' + ${fmt.inr(p.tdsAmount)}">₹0</td>
+                    <td class="text-right whitespace-nowrap font-semibold" th:text="'₹' + ${fmt.inr(p.netAmount)}">₹0</td>
+                    <td><span class="badge whitespace-nowrap" th:classappend="'badge-' + ${p.statusTone}" th:text="${p.statusLabel}">Pending</span></td>
+                    <td class="text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1">
+                            <form th:if="${canApprove and p.status != null and (p.status.name() == 'PENDING' or p.status.name() == 'ON_HOLD')}"
+                                  th:action="@{'/referral-payouts/' + ${enc.encode(p.id)} + '/approve'}" method="post" class="js-action inline"
+                                  data-confirm="Approve this payout for payment?">
+                                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
+                            </form>
+                            <a th:if="${p.status != null and p.status.name() == 'APPROVED'}" th:href="@{'/referral-payouts/' + ${enc.encode(p.id)}}"
+                               class="js-action btn btn-primary btn-sm"><i class="bi bi-currency-rupee"></i> Pay</a>
+                            <a th:href="@{'/referral-payouts/' + ${enc.encode(p.id)}}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="View"><i class="bi bi-eye"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${payoutPage}, base='/referral-payouts')}"></div>
+    </div>
+</div>
+</body>
+</html>

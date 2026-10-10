@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Loan files</title></head>
+<body>
+<div layout:fragment="page-title">Loan files</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Loan files</h2>
+            <p class="text-sm text-slate-500">Every file from document collection to disbursement, with its stage and age.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a th:href="@{/applications/board}" class="btn btn-outline"><i class="bi bi-kanban"></i> Pipeline board</a>
+            <a th:href="@{/applications/export}" class="btn btn-outline" title="Download loan files as Excel"><i class="bi bi-file-earmark-spreadsheet"></i> Export</a>
+            <a th:if="${perms == null or perms.canAdd('applications')}" th:href="@{/applications/new}" class="btn btn-primary"><i class="bi bi-folder-plus"></i> Open loan file</a>
+        </div>
+    </div>
+
+    <div th:if="${lockedToOwn}" class="mb-4 rounded-xl bg-brand-50 border border-brand-100 px-4 py-2.5 text-sm text-brand-800">
+        <i class="bi bi-info-circle"></i> You are seeing the loan files assigned to you.
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/applications}" method="get" data-live-search class="space-y-3 mb-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative flex-1 min-w-[16rem]">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="search" name="q" th:value="${q}" autocomplete="off"
+                           placeholder="Search file code, customer, mobile or bank reference…" class="form-input w-full pl-9"/>
+                </div>
+                <button type="button" data-filter-toggle="#appFilters" class="btn btn-outline">
+                    <i class="bi bi-sliders"></i> Filters
+                </button>
+                <a th:href="@{/applications}" class="btn btn-ghost">Reset</a>
+            </div>
+
+            <div id="appFilters" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3"
+                 th:classappend="${stage == null and loanType == null and lenderId == null and builderId == null} ? 'hidden' : ''">
+                <div>
+                    <label class="form-label">Stage</label>
+                    <select name="stage" class="form-select">
+                        <option value="">Any stage</option>
+                        <option th:each="s : ${stages}" th:value="${s.name()}" th:text="${s.label}"
+                                th:selected="${stage != null and stage.name() == s.name()}">Stage</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Loan type</label>
+                    <select name="loanType" class="form-select">
+                        <option value="">Any loan type</option>
+                        <option th:each="t : ${loanTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                th:selected="${loanType != null and loanType.name() == t.name()}">Type</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Lender</label>
+                    <select name="lenderId" class="form-select">
+                        <option value="">Any lender</option>
+                        <option th:each="l : ${lenders}" th:value="${l.id}" th:text="${l.displayName}"
+                                th:selected="${lenderId != null and lenderId == l.id}">Lender</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Builder</label>
+                    <select name="builderId" class="form-select">
+                        <option value="">Any builder</option>
+                        <option th:each="b : ${builders}" th:value="${b.id}" th:text="${b.name}"
+                                th:selected="${builderId != null and builderId == b.id}">Builder</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full"><i class="bi bi-funnel"></i> Apply</button>
+                </div>
+            </div>
+        </form>
+
+        <th:block th:if="${appPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-folder2-open', title='No loan files match', hint='Adjust the filters, or open a loan file for a customer.')}"></div></th:block>
+
+        <div th:unless="${appPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>File</th><th>Lender / scheme</th><th>Loan type</th><th class="text-right">Amount</th>
+                    <th>Stage</th><th>Progress</th><th>Executive</th><th class="text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="a : ${appPage.content}" class="table-row cursor-pointer" th:data-href="@{'/applications/' + ${enc.encode(a.id)}}">
+                    <td>
+                        <p class="font-semibold" th:text="${a.customerName}">Customer</p>
+                        <p class="text-xs text-slate-400"><span th:text="${a.code}">LA-0001</span>
+                            <span th:if="${a.customerMobile}" th:text="' · ' + ${a.customerMobile}"></span></p>
+                    </td>
+                    <td>
+                        <p class="font-medium" th:text="${a.lenderName} ?: 'Lender not chosen'"
+                           th:classappend="${a.lenderName == null} ? 'text-slate-400 font-normal' : ''">Lender</p>
+                        <p class="text-xs text-slate-400" th:if="${a.productName}" th:text="${a.productName}">Scheme</p>
+                    </td>
+                    <td class="text-slate-600 text-sm" th:text="${a.loanTypeLabel}">Home loan</td>
+                    <td class="text-right whitespace-nowrap">
+                        <p class="font-semibold" th:text="'₹' + ${fmt.lakhs(a.loanAmount)}">₹45 L</p>
+                        <p th:if="${a.sanctionedAmount != null}" class="text-[11px] text-emerald-600">sanctioned</p>
+                        <p th:if="${a.sanctionedAmount == null}" class="text-[11px] text-slate-400">requested</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <span class="badge" th:classappend="'badge-' + ${a.stageTone}" th:text="${a.stageLabel}">Stage</span>
+                        <p class="text-[11px] mt-1" th:classappend="${a.open and a.daysInStage > 7} ? 'text-amber-600 font-semibold' : 'text-slate-400'"
+                           th:text="${a.daysInStage} + ' days in stage'">0 days</p>
+                        <p th:if="${a.sanctionExpiring}" class="text-[11px] text-rose-600 font-semibold mt-0.5">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Sanction expiring</p>
+                    </td>
+                    <td class="w-32">
+                        <div class="flex items-center gap-2">
+                            <span class="meter flex-1"><span th:style="'width:' + ${a.progressPercent} + '%'"></span></span>
+                            <span class="text-xs text-slate-500 w-9 text-right" th:text="${a.progressPercent} + '%'">0%</span>
+                        </div>
+                    </td>
+                    <td class="text-sm text-slate-600" th:text="${a.assignedUserName} ?: 'Unassigned'">Executive</td>
+                    <td class="text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1">
+                            <a th:href="@{'/applications/' + ${enc.encode(a.id)}}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="Open file"><i class="bi bi-eye"></i></a>
+                            <a th:href="@{'/applications/' + ${enc.encode(a.id)} + '/edit'}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="Edit"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${appPage}, base='/applications')}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${modd.code} + ' · MODD'">MODD</title></head>
+<body>
+<div layout:fragment="page-title" th:text="'MODD ' + ${modd.code}">MODD</div>
+
+<div layout:fragment="content">
+<th:block th:with="cur=${path.indexOf(modd.status)}">
+    <div th:replace="~{fragments/ui :: crumbs(parent='MODD', parentUrl='/modd', current=${modd.code})}"></div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="h-14 w-14 shrink-0 rounded-2xl bg-amber-100 text-amber-700 grid place-items-center text-xl">
+                            <i class="bi bi-file-earmark-lock"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-400" th:text="${modd.code}">MD-0001</p>
+                            <h2 class="font-display font-bold text-xl" th:text="${modd.customerName}">Customer</h2>
+                            <p class="text-sm text-slate-500">
+                                Loan file
+                                <a th:href="@{'/applications/' + ${enc.encode(modd.applicationId)}}" class="text-brand-600 hover:underline font-medium"
+                                   th:text="${modd.applicationCode}">LA-0001</a>
+                                <span th:if="${modd.lenderName}" th:text="' · ' + ${modd.lenderName}"></span>
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="badge" th:classappend="'badge-' + ${modd.statusTone}" th:text="${modd.statusLabel}">Status</span>
+                                <span class="badge" th:classappend="${modd.chargesCollected} ? 'badge-emerald' : 'badge-amber'"
+                                      th:text="${modd.chargesCollected} ? 'Charges collected' : 'Charges not collected'">Charges</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:if="${whatsappLink}" th:href="${whatsappLink}" target="_blank" rel="noopener" class="btn btn-success"
+                           title="Send the customer the appointment and charges"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                        <a th:if="${canSeeMoney}"
+                           th:href="@{/finance/receipts/new(applicationId=${enc.encode(modd.applicationId)},feeType='MODD_CHARGES',amount=${modd.totalToCollect})}"
+                           class="btn btn-outline"><i class="bi bi-receipt"></i> Record fee receipt</a>
+                        <form th:if="${perms == null or perms.canDelete('modd')}" th:action="@{'/modd/' + ${enc.encode(modd.id)} + '/archive'}" method="post"
+                              data-confirm="Archive this MODD job? It stays in the audit trail.">
+                            <button type="submit" class="btn btn-danger" title="Archive"><i class="bi bi-archive"></i></button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-5 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Progress</p>
+                        <span class="text-xs text-slate-500" th:text="${modd.progressPercent} + '%'">0%</span>
+                    </div>
+                    <div class="overflow-x-auto -mx-1 px-1 pb-1">
+                        <div class="flex items-center gap-1.5 min-w-max">
+                            <th:block th:each="s, it : ${path}">
+                                <span class="step-dot whitespace-nowrap text-xs"
+                                      th:classappend="${cur >= 0 and it.index < cur} ? 'done' : (${it.index == cur} ? 'active' : '')">
+                                    <i th:if="${cur >= 0 and it.index < cur}" class="bi bi-check2"></i>
+                                    <span th:text="${s.label}">Step</span>
+                                </span>
+                                <i th:unless="${it.last}" class="bi bi-chevron-right text-[10px] text-slate-300"></i>
+                            </th:block>
+                        </div>
+                    </div>
+                    <p th:if="${modd.status != null and modd.status.name() == 'CANCELLED'}" class="text-sm text-rose-600 mt-3">
+                        <i class="bi bi-x-octagon"></i> This MODD job is cancelled.</p>
+                </div>
+            </div>
+
+            <!-- Edit form -->
+            <form th:action="@{/modd/save}" method="post" class="card p-6 space-y-6">
+                <input type="hidden" name="id" th:value="${modd.id}"/>
+
+                <div>
+                    <h3 class="font-display font-bold mb-1">Registration</h3>
+                    <p class="text-xs text-slate-400 mb-4">Status moves forward on its own when you enter the registration number or the deposit date.</p>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                                        th:selected="${modd.status != null and modd.status.name() == s.name()}">Status</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Sub-registrar office</label>
+                            <input type="text" name="subRegistrarOffice" th:value="${modd.subRegistrarOffice}" class="form-input" placeholder="e.g. SRO Andheri-2"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Appointment</label>
+                            <input type="datetime-local" name="appointmentAt" class="form-input"
+                                   th:value="${modd.appointmentAt != null} ? ${#temporals.format(modd.appointmentAt,'yyyy-MM-dd''T''HH:mm')} : ''"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Registered on</label>
+                            <input type="date" name="registeredOn" th:value="${modd.registeredOn}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Registration number</label>
+                            <input type="text" name="registrationNumber" th:value="${modd.registrationNumber}" class="form-input" placeholder="Document no. / year"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Handled by</label>
+                            <select name="assignedUserId" class="form-select">
+                                <option value="">Unassigned</option>
+                                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName}"
+                                        th:selected="${modd.assignedUserId != null and modd.assignedUserId == u.id}">User</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-6">
+                    <h3 class="font-display font-bold mb-1">Charges</h3>
+                    <p class="text-xs text-slate-400 mb-4">Government charges are paid at the sub-registrar; collect them with our service charge before the appointment.</p>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label class="form-label">Secured (loan) amount (₹)</label>
+                            <input type="number" step="1" min="0" name="securedAmount" th:value="${modd.securedAmount}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Stamp duty (₹)</label>
+                            <input type="number" step="1" min="0" name="stampDuty" th:value="${modd.stampDuty}" class="form-input"/>
+                            <p th:if="${suggestedStampDuty != null}" class="text-[11px] text-slate-400 mt-1"
+                               th:text="'Suggested ₹' + ${fmt.inr(suggestedStampDuty)} + ' as per your Settings rate.'">Suggested</p>
+                            <p th:if="${suggestedStampDuty == null}" class="text-[11px] text-slate-400 mt-1">Set the MODD stamp duty rate in Settings to get a suggestion.</p>
+                        </div>
+                        <div>
+                            <label class="form-label">Registration fee (₹)</label>
+                            <input type="number" step="1" min="0" name="registrationFee" th:value="${modd.registrationFee}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Other charges (₹)</label>
+                            <input type="number" step="1" min="0" name="otherCharges" th:value="${modd.otherCharges}" class="form-input" placeholder="Scanning, franking, etc."/>
+                        </div>
+                        <div>
+                            <label class="form-label">Our service charge (₹)</label>
+                            <input type="number" step="1" min="0" name="serviceCharge" th:value="${modd.serviceCharge}" class="form-input"/>
+                        </div>
+                        <div class="flex items-end">
+                            <label class="inline-flex items-center gap-2 text-sm font-medium pb-2.5">
+                                <input type="checkbox" name="chargesCollected" value="true" th:checked="${modd.chargesCollected}" class="rounded"/>
+                                <input type="hidden" name="_chargesCollected" value="on"/>
+                                Charges collected from customer
+                            </label>
+                        </div>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3 mt-5">
+                        <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                            <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Government charges</p>
+                            <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(modd.totalGovernmentCharges)}">₹0</p>
+                        </div>
+                        <div class="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3">
+                            <p class="text-xs uppercase tracking-wide text-brand-600 font-semibold">Total to collect</p>
+                            <p class="font-display font-bold text-lg text-brand-900" th:text="'₹' + ${fmt.inr(modd.totalToCollect)}">₹0</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-2">Totals refresh after you save.</p>
+                </div>
+
+                <div class="border-t border-slate-100 pt-6">
+                    <h3 class="font-display font-bold mb-4">Originals deposited with the bank</h3>
+                    <div class="grid sm:grid-cols-3 gap-5">
+                        <div class="sm:col-span-3">
+                            <label class="form-label">Original documents <span class="text-slate-400 font-normal">(one per line)</span></label>
+                            <textarea name="originalDocuments" rows="5" class="form-textarea" th:text="${modd.originalDocuments}"
+                                      placeholder="Registered sale deed&#10;Mother deed / link documents&#10;Encumbrance certificate"></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label">Deposited on</label>
+                            <input type="date" name="depositedOn" th:value="${modd.depositedOn}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Deposited with</label>
+                            <input type="text" name="depositedWith" th:value="${modd.depositedWith}" class="form-input" placeholder="Branch / officer"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Acknowledgement no.</label>
+                            <input type="text" name="acknowledgementNumber" th:value="${modd.acknowledgementNumber}" class="form-input"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-6 grid gap-5">
+                    <div>
+                        <label class="form-label">Property address</label>
+                        <textarea name="propertyAddress" rows="2" class="form-textarea" th:text="${modd.propertyAddress}"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Remarks</label>
+                        <textarea name="remarks" rows="2" class="form-textarea" th:text="${modd.remarks}"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save MODD</button>
+                    <a th:href="@{/modd}" class="btn btn-outline">Back to list</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="space-y-6">
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">At a glance</h3>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Customer mobile</dt><dd class="font-medium" th:text="${modd.customerMobile} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Appointment</dt>
+                        <dd class="font-medium text-right" th:text="${modd.appointmentAt != null} ? ${#temporals.format(modd.appointmentAt,'dd MMM yyyy, hh:mm a')} : 'Not booked'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Sub-registrar</dt><dd class="font-medium text-right" th:text="${modd.subRegistrarOffice} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Registered</dt>
+                        <dd class="font-medium" th:text="${modd.registeredOn != null} ? ${#temporals.format(modd.registeredOn,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Deposited</dt>
+                        <dd class="font-medium" th:text="${modd.depositedOn != null} ? ${#temporals.format(modd.depositedOn,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Handled by</dt><dd class="font-medium" th:text="${modd.assignedUserName} ?: 'Unassigned'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Total to collect</dt><dd class="font-semibold" th:text="'₹' + ${fmt.inr(modd.totalToCollect)}">₹0</dd></div>
+                </dl>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-3">Appointment checklist</h3>
+                <ul class="space-y-2 text-sm text-slate-600">
+                    <li class="flex gap-2"><i class="bi bi-check2-circle text-brand-600"></i> Customer and co-owner with original photo ID</li>
+                    <li class="flex gap-2"><i class="bi bi-check2-circle text-brand-600"></i> All original title documents listed above</li>
+                    <li class="flex gap-2"><i class="bi bi-check2-circle text-brand-600"></i> Stamp duty paid / e-stamp ready</li>
+                    <li class="flex gap-2"><i class="bi bi-check2-circle text-brand-600"></i> Bank's authorised officer or POA confirmed</li>
+                    <li class="flex gap-2"><i class="bi bi-check2-circle text-brand-600"></i> Two witnesses with ID</li>
+                </ul>
+            </div>
+
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</th:block>
+</div>
+</body>
+</html>

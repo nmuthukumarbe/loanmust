@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Customers</title></head>
+<body>
+<div layout:fragment="page-title">Customers</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Customers</h2>
+            <p class="text-sm text-slate-500">Borrowers with their credit profile, loan files and bank comparisons.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:if="${perms == null or perms.canAdd('customers')}" th:href="@{/customers/new}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Add customer</a>
+        </div>
+    </div>
+
+    <div th:if="${lockedToOwn}" class="mb-4 rounded-xl bg-brand-50 border border-brand-100 px-4 py-2.5 text-sm text-brand-700">
+        <i class="bi bi-info-circle"></i> You are seeing the customers you own.
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/customers}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[14rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search name, mobile, PAN or code…" class="form-input w-full pl-9"/>
+            </div>
+            <select name="employmentType" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">All employment</option>
+                <option th:each="e : ${employmentTypes}" th:value="${e.name()}" th:text="${e.label}"
+                        th:selected="${employmentType != null and employmentType.name() == e.name()}">Salaried</option>
+            </select>
+            <a th:href="@{/customers}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${customerPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-people', title='No customers found', hint='Convert a lead or add a customer directly.')}"></div></th:block>
+
+        <div th:unless="${customerPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Customer</th><th>Mobile</th><th>Employment</th><th class="text-right">Monthly income</th>
+                    <th>CIBIL</th><th>Owner</th><th>Referred by</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${customerPage.content}" class="table-row cursor-pointer" th:data-href="@{'/customers/' + ${enc.encode(c.id)}}">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold"
+                                 th:text="${c.initials}">CU</div>
+                            <div class="min-w-0">
+                                <p class="font-semibold truncate" th:text="${c.name}">Name</p>
+                                <p class="text-xs text-slate-400">
+                                    <span th:text="${c.code}">CU-0001</span>
+                                    <span th:if="${c.city}" th:text="' · ' + ${c.city}"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="whitespace-nowrap" th:text="${c.mobile}">mobile</td>
+                    <td class="text-slate-600" th:text="${c.employmentLabel}">Salaried</td>
+                    <td class="text-right whitespace-nowrap" th:text="${c.monthlyIncome != null} ? '₹' + ${fmt.inr(c.monthlyIncome)} : '—'">₹0</td>
+                    <td>
+                        <span th:if="${c.cibilScore}" class="badge" th:classappend="'badge-' + ${c.cibilTone}" th:text="${c.cibilScore}">750</span>
+                        <span th:unless="${c.cibilScore}" class="text-slate-300">—</span>
+                    </td>
+                    <td class="text-slate-600 text-sm" th:text="${c.ownerName} ?: 'Unassigned'">Owner</td>
+                    <td class="text-slate-500 text-sm" th:text="${c.referralPartnerName} ?: '—'">Partner</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${customerPage}, base='/customers')}"></div>
+    </div>
+</div>
+</body>
+</html>

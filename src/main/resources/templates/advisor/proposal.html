@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${proposal.code}">Proposal</title></head>
+<body>
+<div layout:fragment="page-title" th:text="'Proposal ' + ${proposal.code}">Proposal</div>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Proposals', parentUrl='/advisor/proposals', current=${proposal.code})}"></div>
+
+    <!-- Header -->
+    <div class="card p-6 mb-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="font-display font-bold text-xl" th:text="${proposal.code}">PR-0001</h2>
+                    <span th:if="${proposal.expired}" class="badge badge-rose">Expired</span>
+                    <span th:unless="${proposal.expired}" class="badge badge-emerald">Active</span>
+                    <span th:if="${proposal.applicationId != null}" class="badge badge-brand">Loan file opened</span>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                    <span th:text="${proposal.customerName} ?: 'Walk-in enquiry'">Customer</span>
+                    <span th:if="${proposal.customerMobile}" th:text="' · ' + ${proposal.customerMobile}"></span>
+                </p>
+                <p class="text-sm text-slate-500">
+                    <span th:text="${proposal.loanTypeLabel}">Home loan</span>
+                    <span th:text="' · ₹' + ${fmt.inr(proposal.loanAmount)}">₹0</span>
+                    <span th:if="${proposal.tenureYears}" th:text="' · ' + ${proposal.tenureYears} + ' years'"></span>
+                </p>
+                <p class="text-xs text-slate-400 mt-2">
+                    <span th:if="${proposal.createdAt}" th:text="'Prepared ' + ${#temporals.format(proposal.createdAt,'dd MMM yyyy')}">Prepared</span>
+                    <span th:if="${proposal.preparedByName}" th:text="' by ' + ${proposal.preparedByName}"></span>
+                    <span th:if="${proposal.validUntil}" th:text="' · valid until ' + ${#temporals.format(proposal.validUntil,'dd MMM yyyy')}"></span>
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a th:if="${proposal.applicationId == null and (perms == null or perms.canAdd('applications'))}"
+                   th:href="@{/applications/new(proposalId=${enc.encode(proposal.id)})}" class="btn btn-primary">
+                    <i class="bi bi-folder-plus"></i> Open loan file from this</a>
+                <a th:if="${proposal.applicationId != null}" th:href="@{'/applications/' + ${enc.encode(proposal.applicationId)}}" class="btn btn-primary">
+                    <i class="bi bi-folder2-open"></i> Open loan file</a>
+                <a th:if="${proposal.customerId != null}" th:href="@{'/customers/' + ${enc.encode(proposal.customerId)}}" class="btn btn-outline">
+                    <i class="bi bi-person"></i> Customer</a>
+                <a th:if="${proposal.customerId == null and proposal.leadId != null}" th:href="@{'/leads/' + ${enc.encode(proposal.leadId)}}" class="btn btn-outline">
+                    <i class="bi bi-funnel"></i> Lead</a>
+                <form th:if="${perms == null or perms.canDelete('advisor')}" th:action="@{'/advisor/proposals/' + ${enc.encode(proposal.id)} + '/archive'}" method="post"
+                      data-confirm="Withdraw this proposal? Its public link will stop opening.">
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> Withdraw</button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${proposal.remarks}" class="mt-4 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-1">Remarks for the customer</p>
+            <p th:text="${proposal.remarks}">remarks</p>
+        </div>
+    </div>
+
+    <!-- Share -->
+    <div class="card p-5 mb-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h3 class="font-display font-bold">Share with the customer</h3>
+                <p class="text-xs text-slate-400">The link shows the comparison and recommendation only - never your payout. It stops working if you withdraw the proposal.</p>
+            </div>
+            <div class="text-right text-sm">
+                <span th:if="${proposal.viewCount != null and proposal.viewCount > 0}" class="badge badge-emerald">
+                    <i class="bi bi-eye"></i>
+                    <span th:text="'Opened ' + ${proposal.viewCount} + (${proposal.viewCount == 1} ? ' time' : ' times')">Opened</span>
+                </span>
+                <span th:unless="${proposal.viewCount != null and proposal.viewCount > 0}" class="badge badge-slate">Not opened yet</span>
+                <p class="text-xs text-slate-400 mt-1" th:if="${proposal.lastViewedAt}"
+                   th:text="'Last opened ' + ${#temporals.format(proposal.lastViewedAt,'dd MMM yyyy, HH:mm')}">Last</p>
+            </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+            <input type="text" readonly th:value="${shareUrl}" class="form-input flex-1 min-w-[14rem] font-mono text-xs" onclick="this.select()"/>
+            <button type="button" class="btn btn-outline" data-copy-btn th:attr="data-copy=${shareUrl}"><i class="bi bi-clipboard"></i> Copy link</button>
+            <a th:if="${whatsappLink != null}" th:href="${whatsappLink}" target="_blank" rel="noopener" class="btn btn-success">
+                <i class="bi bi-whatsapp"></i> WhatsApp customer</a>
+            <a th:href="${whatsappShare}" target="_blank" rel="noopener" class="btn btn-outline"><i class="bi bi-share"></i> Share…</a>
+        </div>
+    </div>
+
+    <th:block th:if="${outcome != null}">
+        <p class="text-xs text-slate-400 mb-3" th:if="${outcome.generatedAt}">
+            <i class="bi bi-snow"></i> Frozen comparison as generated on
+            <span th:text="${#temporals.format(outcome.generatedAt,'dd MMM yyyy, HH:mm')}">date</span>. Bank rates may have moved since.
+        </p>
+        <div th:replace="~{advisor/results :: results(outcome=${outcome}, showPayout=${showPayout})}"></div>
+    </th:block>
+    <div th:if="${outcome == null}" class="card p-6">
+        <div th:replace="~{fragments/ui :: empty(icon='bi-exclamation-circle', title='Comparison not available', hint='The saved comparison for this proposal could not be read. Run a fresh comparison in Rate Compare.')}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${partner.name}">Referral partner</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${partner.name}">Referral partner</div>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Referral Partners', parentUrl='/referrals', current=${partner.name})}"></div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <!-- Left column -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="h-14 w-14 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center text-xl">
+                            <i class="bi bi-person-heart"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-display font-bold text-xl" th:text="${partner.name}">Name</h2>
+                            <p class="text-sm text-slate-500">
+                                <span th:text="${partner.code}">RF-0001</span>
+                                <span th:text="' · ' + ${partner.partnerTypeLabel}">· Individual</span>
+                                <span th:if="${partner.city}" th:text="' · ' + ${partner.city}"></span>
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="badge" th:classappend="${partner.active} ? 'badge-emerald' : 'badge-slate'"
+                                      th:text="${partner.active} ? 'Active' : 'Inactive'">Active</span>
+                                <span class="badge badge-brand" th:text="${partner.payoutRule}">1% of disbursal</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:if="${perms == null or perms.canEdit('referrals')}" th:href="@{'/referrals/' + ${enc.encode(partner.id)} + '/edit'}" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+                        <a th:if="${perms == null or perms.canAdd('leads')}" th:href="@{/leads/new(partnerId=${enc.encode(partner.id)})}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add lead for this partner</a>
+                    </div>
+                </div>
+
+                <dl class="grid sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Mobile</dt><dd class="font-medium" th:text="${partner.mobile}">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Email</dt><dd class="font-medium break-all" th:text="${partner.email} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Joined</dt>
+                        <dd class="font-medium" th:text="${partner.createdAt != null} ? ${#temporals.format(partner.createdAt,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div class="sm:col-span-3" th:if="${partner.notes}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Notes</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${partner.notes}">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Referral link -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1"><i class="bi bi-link-45deg text-brand-600"></i> Personal referral link</h3>
+                <p class="text-xs text-slate-500 mb-4">Anyone who enquires through this link becomes a lead tagged to this partner.</p>
+                <div class="rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 flex flex-wrap items-center gap-3">
+                    <code class="flex-1 min-w-0 break-all text-sm font-semibold text-brand-800" th:text="${referralUrl}">https://…/refer/RF-0001</code>
+                    <button type="button" data-copy-btn th:attr="data-copy=${referralUrl}" class="btn btn-outline btn-sm">
+                        <i class="bi bi-clipboard"></i> Copy link</button>
+                    <a th:if="${inviteLink}" th:href="${inviteLink}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+                        <i class="bi bi-whatsapp"></i> Send link on WhatsApp</a>
+                </div>
+                <p th:unless="${partner.active}" class="text-xs text-amber-700 mt-3"><i class="bi bi-exclamation-triangle"></i> This partner is inactive — the link will not accept new enquiries.</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-4" th:classappend="${showMoney} ? 'lg:grid-cols-4' : ''">
+                <div class="stat-card stat-brand">
+                    <i class="stat-ico bi bi-funnel"></i>
+                    <p class="stat-label">Leads referred</p>
+                    <p class="stat-value" th:text="${leads.size()}">0</p>
+                </div>
+                <div class="stat-card stat-sky">
+                    <i class="stat-ico bi bi-folder2-open"></i>
+                    <p class="stat-label">Loan files</p>
+                    <p class="stat-value" th:text="${applications.size()}">0</p>
+                </div>
+                <div th:if="${showMoney}" class="stat-card stat-amber">
+                    <i class="stat-ico bi bi-hourglass-split"></i>
+                    <p class="stat-label">Owed</p>
+                    <p class="stat-value" th:text="'₹' + ${fmt.inr(owed)}">₹0</p>
+                </div>
+                <div th:if="${showMoney}" class="stat-card stat-emerald">
+                    <i class="stat-ico bi bi-check2-circle"></i>
+                    <p class="stat-label">Paid</p>
+                    <p class="stat-value" th:text="'₹' + ${fmt.inr(paid)}">₹0</p>
+                </div>
+            </div>
+
+            <!-- Leads -->
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Leads from this partner</h3>
+                <th:block th:if="${leads.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-funnel', title='No leads yet', hint='Share the personal link, or add a lead for this partner.')}"></div></th:block>
+                <div th:unless="${leads.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Lead</th><th>Status</th><th>Created</th></tr></thead>
+                        <tbody>
+                        <tr th:each="l : ${leads}" class="table-row cursor-pointer" th:data-href="@{'/leads/' + ${enc.encode(l.id)}}">
+                            <td><p class="font-semibold" th:text="${l.name}">Name</p>
+                                <p class="text-xs text-slate-400" th:text="${l.code}">LD-0001</p></td>
+                            <td><span class="badge" th:classappend="'badge-' + ${l.statusTone}" th:text="${l.statusLabel}">New</span></td>
+                            <td class="whitespace-nowrap text-sm text-slate-500"
+                                th:text="${l.createdAt != null} ? ${#temporals.format(l.createdAt,'dd MMM yyyy')} : '—'">date</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loan files -->
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Loan files</h3>
+                <th:block th:if="${applications.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-folder2-open', title='No loan files yet', hint='Files opened for leads from this partner appear here.')}"></div></th:block>
+                <div th:unless="${applications.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>File</th><th>Lender</th><th>Stage</th><th class="text-right">Disbursed</th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${applications}" class="table-row cursor-pointer" th:data-href="@{'/applications/' + ${enc.encode(a.id)}}">
+                            <td><p class="font-semibold" th:text="${a.customerName}">Customer</p>
+                                <p class="text-xs text-slate-400" th:text="${a.code}">LF-0001</p></td>
+                            <td class="text-sm" th:text="${a.lenderName} ?: '—'">Lender</td>
+                            <td><span class="badge" th:classappend="'badge-' + ${a.stageTone}" th:text="${a.stageLabel}">Stage</span></td>
+                            <td class="text-right whitespace-nowrap font-medium" th:text="'₹' + ${fmt.inr(a.totalDisbursed)}">₹0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Payouts -->
+            <div th:if="${showMoney}" class="card p-5">
+                <h3 class="font-display font-bold mb-1">Payouts</h3>
+                <p class="text-xs text-slate-400 mb-4">Raised automatically on each disbursement of a referred file.</p>
+                <th:block th:if="${payouts.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-send-check', title='No payouts yet', hint='A payout is raised when a referred loan disburses.')}"></div></th:block>
+                <div th:unless="${payouts.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Payout</th><th class="text-right">Disbursed</th><th class="text-right">Gross</th>
+                            <th class="text-right">TDS</th><th class="text-right">Net</th><th>Status</th></tr></thead>
+                        <tbody>
+                        <tr th:each="p : ${payouts}" class="table-row cursor-pointer" th:data-href="@{'/referral-payouts/' + ${enc.encode(p.id)}}">
+                            <td><a th:href="@{'/referral-payouts/' + ${enc.encode(p.id)}}" class="font-semibold hover:text-brand-700" th:text="${p.code}">RP-0001</a>
+                                <p class="text-xs text-slate-400" th:text="${p.applicationCode}">LF-0001</p></td>
+                            <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(p.disbursedAmount)}">₹0</td>
+                            <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(p.grossAmount)}">₹0</td>
+                            <td class="text-right whitespace-nowrap text-slate-500" th:text="'₹' + ${fmt.inr(p.tdsAmount)}">₹0</td>
+                            <td class="text-right whitespace-nowrap font-semibold" th:text="'₹' + ${fmt.inr(p.netAmount)}">₹0</td>
+                            <td><span class="badge" th:classappend="'badge-' + ${p.statusTone}" th:text="${p.statusLabel}">Pending</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Payment details</h3>
+                <div th:unless="${partner.payable}" class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+                    <i class="bi bi-exclamation-triangle"></i> No UPI ID or bank account on file — payouts cannot be paid until one is added.
+                </div>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">UPI ID</dt><dd class="font-medium text-right break-all" th:text="${partner.upiId} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Account holder</dt><dd class="font-medium text-right" th:text="${partner.bankAccountName} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Account</dt><dd class="font-medium text-right" th:text="${partner.maskedAccount} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">IFSC</dt><dd class="font-medium text-right" th:text="${partner.ifsc} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Bank</dt><dd class="font-medium text-right" th:text="${partner.bankName} ?: '—'">—</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">PAN</dt>
+                        <dd class="font-medium text-right">
+                            <span th:if="${partner.pan}" th:text="${partner.pan}">PAN</span>
+                            <span th:unless="${partner.pan}" class="text-amber-600">Not given — needed for TDS</span>
+                        </dd></div>
+                </dl>
+            </div>
+
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Rate Compare results, shared by advisor/index (live run) and advisor/proposal (frozen copy).
+     Usage: <div th:replace="~{advisor/results :: results(outcome=${outcome}, showPayout=${showPayout})}"></div> -->
+<div th:fragment="results(outcome, showPayout)" class="space-y-6">
+
+    <!-- Summary strip -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="stat-card stat-slate">
+            <i class="stat-ico bi bi-bank"></i>
+            <p class="stat-label">Schemes checked</p>
+            <p class="stat-value" th:text="${outcome.evaluatedCount}">0</p>
+        </div>
+        <div class="stat-card stat-emerald">
+            <i class="stat-ico bi bi-check2-circle"></i>
+            <p class="stat-label">Eligible</p>
+            <p class="stat-value" th:text="${outcome.eligibleCount}">0</p>
+        </div>
+        <div class="stat-card stat-brand">
+            <i class="stat-ico bi bi-percent"></i>
+            <p class="stat-label">Lowest rate</p>
+            <p class="stat-value" th:text="${fmt.pct(outcome.lowestRate)}">—</p>
+        </div>
+        <div class="stat-card stat-teal">
+            <i class="stat-ico bi bi-graph-up-arrow"></i>
+            <p class="stat-label">Highest eligible amount</p>
+            <p class="stat-value" th:text="${outcome.highestEligibleAmount != null} ? '₹' + ${fmt.lakhs(outcome.highestEligibleAmount)} : '—'">—</p>
+        </div>
+    </div>
+
+    <!-- Recommended -->
+    <div th:if="${outcome.recommended != null}" th:with="r=${outcome.recommended}"
+         class="card p-6 border-2" style="border-color: var(--brand-500)">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <span class="badge badge-brand"><i class="bi bi-star-fill"></i> Recommended</span>
+                <h3 class="font-display font-extrabold text-2xl mt-2 flex items-center gap-2">
+                    <span class="h-3 w-3 rounded-full shrink-0" th:style="'background:' + (${r.lenderColor} ?: '#6366f1')"></span>
+                    <span th:text="${r.lenderName}">Bank</span>
+                </h3>
+                <p class="text-sm text-slate-500" th:text="${r.productName}">Product</p>
+            </div>
+            <div class="text-right">
+                <p class="font-display font-extrabold text-4xl text-brand-700" th:text="${fmt.pct(r.applicableRate)}">8.5%</p>
+                <p class="text-xs text-slate-500" th:if="${r.rateNote}" th:text="${r.rateNote}">note</p>
+                <p class="text-xs text-slate-400" th:if="${r.rateTypeLabel}" th:text="${r.rateTypeLabel} + (${r.benchmark} != null ? ' · ' + ${r.benchmark} : '')">Floating</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-5 border-t border-slate-100">
+            <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">Monthly EMI</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.emi)}">₹0</p>
+                <p class="text-xs text-slate-400" th:text="${r.tenureYearsRounded} + ' years'">20 years</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">Total interest</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.totalInterest)}">₹0</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">Processing fee</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.processingFee)}">₹0</p>
+                <p class="text-xs text-slate-400" th:text="'+ ₹' + ${fmt.inr(r.processingFeeGst)} + ' GST'">GST</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">Total cost of loan</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.totalCost)}">₹0</p>
+                <p class="text-xs text-slate-400">interest + fees</p>
+            </div>
+        </div>
+
+        <div th:unless="${outcome.recommendationReasons == null or outcome.recommendationReasons.isEmpty()}"
+             class="mt-5 rounded-xl bg-brand-50 border border-brand-100 p-4">
+            <p class="text-[11px] uppercase tracking-wide text-brand-600 font-semibold mb-2">Why this bank</p>
+            <ul class="space-y-1 text-sm text-brand-900">
+                <li th:each="why : ${outcome.recommendationReasons}" class="flex gap-2">
+                    <i class="bi bi-check2 text-brand-600"></i><span th:text="${why}">reason</span>
+                </li>
+            </ul>
+        </div>
+        <div th:if="${showPayout and r.payoutPercent != null}" class="mt-3 text-xs text-slate-500">
+            <i class="bi bi-lock"></i> Internal: payout <b th:text="${fmt.pct(r.payoutPercent)}">0%</b>
+            <span th:if="${r.payoutAmount}" th:text="'≈ ₹' + ${fmt.inr(r.payoutAmount)}"></span> (never shown to the customer)
+        </div>
+    </div>
+
+    <div th:if="${outcome.recommended == null}" class="card p-6 border border-rose-200 bg-rose-50">
+        <h3 class="font-display font-bold text-rose-700"><i class="bi bi-exclamation-octagon"></i> No lender is eligible for this ask</h3>
+        <p class="text-sm text-rose-700 mt-1">Check each bank's reasons below - a lower amount, a longer tenure, a co-applicant's income
+            or clearing an existing EMI usually brings banks back in.</p>
+    </div>
+
+    <!-- Full comparison -->
+    <div class="card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h3 class="font-display font-bold">All banks compared</h3>
+            <p class="text-xs text-slate-400">Ranked by total cost of the loan (interest + processing fee + GST).</p>
+        </div>
+        <th:block th:if="${outcome.offers == null or outcome.offers.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-bank', title='No rate cards to compare', hint='Add lenders and their products under Banks & Rates.')}"></div></th:block>
+        <div th:unless="${outcome.offers == null or outcome.offers.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>#</th><th>Lender</th><th>Rate</th><th class="text-right">EMI</th><th class="text-right">Total interest</th>
+                    <th class="text-right">Fee + GST</th><th class="text-right">Total cost</th><th class="text-right">Max eligible</th>
+                    <th class="text-right">FOIR</th><th class="text-right">LTV</th>
+                    <th th:if="${showPayout}" class="text-right">Payout</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="o : ${outcome.offers}" class="table-row align-top"
+                    th:classappend="${o.recommended} ? 'bg-brand-50' : (${!o.eligible} ? 'opacity-70' : '')">
+                    <td class="font-semibold text-slate-500" th:text="${o.rank > 0} ? ${o.rank} : '—'">1</td>
+                    <td class="min-w-[12rem]">
+                        <p class="font-semibold flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full shrink-0" th:style="'background:' + (${o.lenderColor} ?: '#94a3b8')"></span>
+                            <span th:text="${o.lenderName}">Bank</span>
+                            <i th:if="${o.recommended}" class="bi bi-star-fill text-amber-500 text-xs" title="Recommended"></i>
+                        </p>
+                        <p class="text-xs text-slate-400" th:text="${o.productName}">Product</p>
+                        <ul th:unless="${(o.reasons == null or o.reasons.isEmpty()) and (o.notes == null or o.notes.isEmpty())}"
+                            class="mt-1 space-y-0.5 text-[11px] text-slate-500">
+                            <li th:each="x : ${o.reasons}" class="flex gap-1"><i class="bi bi-exclamation-circle text-rose-500"></i><span th:text="${x}">reason</span></li>
+                            <li th:each="x : ${o.notes}" class="flex gap-1"><i class="bi bi-info-circle text-slate-400"></i><span th:text="${x}">note</span></li>
+                        </ul>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <span class="font-semibold" th:text="${fmt.pct(o.applicableRate)}">8.5%</span>
+                        <i th:if="${o.rateStale}" class="bi bi-exclamation-triangle-fill text-amber-500 text-xs"
+                           title="Rate card not updated recently - confirm with the bank"></i>
+                        <p class="text-[11px] text-slate-400 max-w-[10rem]" th:if="${o.rateNote}" th:text="${o.rateNote}">note</p>
+                    </td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(o.emi)}">₹0</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(o.totalInterest)}">₹0</td>
+                    <td class="text-right whitespace-nowrap">
+                        <span th:text="'₹' + ${fmt.inr(o.processingFee)}">₹0</span>
+                        <p class="text-[11px] text-slate-400" th:text="'+ ₹' + ${fmt.inr(o.processingFeeGst)} + ' GST'">GST</p>
+                    </td>
+                    <td class="text-right whitespace-nowrap">
+                        <span class="font-semibold" th:text="'₹' + ${fmt.inr(o.totalCost)}">₹0</span>
+                        <p th:if="${o.extraCostVsBest != null and o.extraCostVsBest.signum() > 0}" class="text-[11px] text-rose-600"
+                           th:text="'+₹' + ${fmt.inr(o.extraCostVsBest)} + ' vs best'">+₹0 vs best</p>
+                        <p th:if="${o.recommended}" class="text-[11px] text-emerald-600">Best value</p>
+                    </td>
+                    <td class="text-right whitespace-nowrap" th:text="${o.maxEligibleAmount != null} ? '₹' + ${fmt.lakhs(o.maxEligibleAmount)} : '—'">₹0</td>
+                    <td class="text-right whitespace-nowrap" th:text="${fmt.pct(o.foirPercent)}">—</td>
+                    <td class="text-right whitespace-nowrap" th:text="${fmt.pct(o.ltvPercent)}">—</td>
+                    <td th:if="${showPayout}" class="text-right whitespace-nowrap">
+                        <span th:text="${fmt.pct(o.payoutPercent)}">—</span>
+                        <p class="text-[11px] text-slate-400" th:if="${o.payoutAmount}" th:text="'₹' + ${fmt.inr(o.payoutAmount)}">₹0</p>
+                    </td>
+                    <td><span class="badge whitespace-nowrap" th:classappend="'badge-' + ${o.statusTone}" th:text="${o.statusLabel}">Eligible</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-slate-400 mt-3"><i class="bi bi-exclamation-triangle-fill text-amber-500"></i>
+            marks a rate card that has not been refreshed recently. FOIR = all EMIs ÷ net monthly income; LTV = loan ÷ property value.</p>
+    </div>
+
+    <!-- Year-wise repayment -->
+    <div class="card p-5" th:unless="${outcome.schedule == null or outcome.schedule.isEmpty()}">
+        <h3 class="font-display font-bold mb-1">Year-wise repayment</h3>
+        <p class="text-xs text-slate-400 mb-4" th:if="${outcome.recommended != null}"
+           th:text="'For the recommended option: ' + ${outcome.recommended.lenderName} + ' at ' + ${fmt.pct(outcome.recommended.applicableRate)}">For the recommended option</p>
+        <div class="overflow-x-auto -mx-5 px-5 max-h-[28rem] overflow-y-auto">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr><th>Year</th><th class="text-right">Opening balance</th><th class="text-right">Principal paid</th><th class="text-right">Interest paid</th><th class="text-right">Closing balance</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="y : ${outcome.schedule}" class="table-row">
+                    <td class="font-semibold" th:text="${y.year}">1</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(y.opening)}">₹0</td>
+                    <td class="text-right whitespace-nowrap text-emerald-600" th:text="'₹' + ${fmt.inr(y.principal)}">₹0</td>
+                    <td class="text-right whitespace-nowrap text-rose-600" th:text="'₹' + ${fmt.inr(y.interest)}">₹0</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(y.closing)}">₹0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${app.id == null} ? 'Open loan file' : 'Edit loan file'">Loan file</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${app.id == null} ? 'Open loan file' : 'Edit loan file'">Loan file</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Loan files', parentUrl='/applications', current=${app.id == null ? 'New loan file' : app.code})}"></div>
+
+        <div th:if="${app.id == null}" class="mb-4 rounded-xl bg-brand-50 border border-brand-100 px-4 py-2.5 text-sm text-brand-800">
+            <i class="bi bi-list-check"></i> A document checklist tailored to the customer's employment type and loan type is created automatically.
+        </div>
+
+        <form th:action="@{/applications/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${app.id}"/>
+            <input type="hidden" name="leadId" th:value="${app.leadId}"/>
+            <input type="hidden" name="proposalId" th:value="${app.proposalId}"/>
+
+            <!-- Customer -->
+            <div>
+                <h3 class="font-display font-bold mb-4">Customer</h3>
+                <div th:if="${customer != null}" class="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                    <input type="hidden" name="customerId" th:value="${customer.id}"/>
+                    <div class="h-10 w-10 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-sm font-semibold"
+                         th:text="${customer.initials}">CU</div>
+                    <div class="min-w-0">
+                        <p class="font-semibold" th:text="${customer.name}">Customer</p>
+                        <p class="text-xs text-slate-400">
+                            <span th:text="${customer.code}">CUS-0001</span>
+                            <span th:if="${customer.mobile}" th:text="' · ' + ${customer.mobile}"></span>
+                            <span th:text="' · ' + ${customer.employmentLabel}"></span>
+                        </p>
+                    </div>
+                </div>
+                <div th:if="${customer == null}">
+                    <label class="form-label">Customer</label>
+                    <select name="customerId" required class="form-select">
+                        <option value="">Pick the customer…</option>
+                        <option th:each="c : ${customers}" th:value="${c.id}"
+                                th:text="${c.name} + ' · ' + ${c.code} + (${c.mobile} != null ? ' · ' + ${c.mobile} : '')"
+                                th:selected="${app.customerId != null and app.customerId == c.id}">Customer</option>
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">Not in the list? <a th:href="@{/customers/new}" class="text-brand-600 hover:underline">Add the customer</a> first, then open the file.</p>
+                </div>
+            </div>
+
+            <!-- Loan -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Loan</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Loan type</label>
+                        <select name="loanType" class="form-select">
+                            <option th:each="t : ${loanTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                    th:selected="${app.loanType != null and app.loanType.name() == t.name()}">Type</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Lender scheme</label>
+                        <select name="productId" class="form-select">
+                            <option value="">Not chosen yet</option>
+                            <option th:each="p : ${products}" th:value="${p.id}"
+                                    th:text="${p.lenderName} + ' · ' + ${p.name} + ' (' + ${p.rateRange} + ')'"
+                                    th:selected="${app.productId != null and app.productId == p.id}">Scheme</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">Picking a scheme sets the lender automatically.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Lender <span class="text-slate-400 font-normal">(if no scheme chosen)</span></label>
+                        <select name="lenderId" class="form-select">
+                            <option value="">Not chosen yet</option>
+                            <option th:each="l : ${lenders}" th:value="${l.id}" th:text="${l.displayName}"
+                                    th:selected="${app.lenderId != null and app.lenderId == l.id}">Lender</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Loan amount requested (₹)</label>
+                        <input type="number" step="1" min="0" name="requestedAmount" th:value="${app.requestedAmount}" class="form-input" placeholder="e.g. 4500000"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Tenure (years)</label>
+                        <input type="number" step="1" min="1" max="40" name="tenureYears" th:value="${app.tenureYears}" class="form-input"/>
+                    </div>
+                    <div th:if="${showPayout}">
+                        <label class="form-label">Our payout % <span class="text-slate-400 font-normal">(from the lender)</span></label>
+                        <input type="number" step="0.01" min="0" name="payoutPercent" th:value="${app.payoutPercent}" class="form-input" placeholder="Leave blank to use the scheme's rate"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Bank payout is raised on this percentage when a disbursement is recorded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Source &amp; channel</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Source</label>
+                        <select name="source" class="form-select">
+                            <option th:each="s : ${sources}" th:value="${s.name()}" th:text="${s.label}"
+                                    th:selected="${app.source != null and app.source.name() == s.name()}">Source</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Referral partner</label>
+                        <select name="referralPartnerId" class="form-select">
+                            <option value="">None</option>
+                            <option th:each="r : ${partners}" th:value="${r.id}" th:text="${r.name} + ' · ' + ${r.partnerTypeLabel}"
+                                    th:selected="${app.referralPartnerId != null and app.referralPartnerId == r.id}">Partner</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">The partner's payout is raised automatically on each disbursement.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Builder</label>
+                        <select name="builderId" class="form-select">
+                            <option value="">None</option>
+                            <option th:each="b : ${builders}" th:value="${b.id}" th:text="${b.name}"
+                                    th:selected="${app.builderId != null and app.builderId == b.id}">Builder</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Project</label>
+                        <select name="projectId" class="form-select">
+                            <option value="">None</option>
+                            <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name} + (${p.builderName} != null ? ' · ' + ${p.builderName} : '')"
+                                    th:selected="${app.projectId != null and app.projectId == p.id}">Project</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">Choosing a project also sets its builder.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Property</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Property type</label>
+                        <input type="text" name="propertyType" th:value="${app.propertyType}" list="propertyTypeOptions" class="form-input" placeholder="e.g. Apartment"/>
+                        <datalist id="propertyTypeOptions">
+                            <option value="Apartment"></option>
+                            <option value="Villa"></option>
+                            <option value="Independent house"></option>
+                            <option value="Row house"></option>
+                            <option value="Plot"></option>
+                            <option value="Commercial"></option>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="form-label">Property value (₹)</label>
+                        <input type="number" step="1" min="0" name="propertyValue" th:value="${app.propertyValue}" class="form-input" placeholder="Agreement / market value"/>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Property address</label>
+                        <textarea name="propertyAddress" rows="2" class="form-textarea" th:text="${app.propertyAddress}"
+                                  placeholder="Flat / plot no., project, survey no., locality, city"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Co-applicant -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Co-applicant</h3>
+                <p class="text-xs text-slate-400 mb-4">An earning co-applicant adds income for eligibility; a woman co-owner often gets a rate concession.</p>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Name</label>
+                        <input type="text" name="coApplicantName" th:value="${app.coApplicantName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Relation</label>
+                        <input type="text" name="coApplicantRelation" th:value="${app.coApplicantRelation}" list="relationOptions" class="form-input" placeholder="e.g. Spouse"/>
+                        <datalist id="relationOptions">
+                            <option value="Spouse"></option>
+                            <option value="Father"></option>
+                            <option value="Mother"></option>
+                            <option value="Son"></option>
+                            <option value="Daughter"></option>
+                            <option value="Brother"></option>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="form-label">Monthly income (₹)</label>
+                        <input type="number" step="1" min="0" name="coApplicantIncome" th:value="${app.coApplicantIncome}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Team</h3>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Executive</label>
+                        <select name="assignedUserId" class="form-select">
+                            <option value="">Unassigned</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' — ' + ${u.roleLabel}"
+                                    th:selected="${app.assignedUserId != null and app.assignedUserId == u.id}">User</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Processor</label>
+                        <select name="processorUserId" class="form-select">
+                            <option value="">Unassigned</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' — ' + ${u.roleLabel}"
+                                    th:selected="${app.processorUserId != null and app.processorUserId == u.id}">User</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Expected disbursement</label>
+                        <input type="date" name="expectedDisbursementDate" th:value="${app.expectedDisbursementDate}" class="form-input"/>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="form-label">Internal notes</label>
+                        <textarea name="notes" rows="2" class="form-textarea" th:text="${app.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i>
+                    <span th:text="${app.id == null} ? 'Open loan file' : 'Save loan file'">Save</span></button>
+                <a th:if="${app.id == null}" th:href="@{/applications}" class="btn btn-outline">Cancel</a>
+                <a th:if="${app.id != null}" th:href="@{'/applications/' + ${enc.encode(app.id)}}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

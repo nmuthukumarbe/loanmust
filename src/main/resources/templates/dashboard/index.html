@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Dashboard</title></head>
+<body>
+<div layout:fragment="page-title">Dashboard</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">
+                <span>Good to see you</span><span th:if="${currentUserName}" th:text="', ' + ${currentUserName}">, User</span>
+            </h2>
+            <p class="text-sm text-slate-500" th:text="${ownBookOnly} ? 'Your leads and loan files at a glance.' : 'The whole agency at a glance - this month so far.'">Overview</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a th:if="${perms == null or perms.canAdd('leads')}" th:href="@{/leads/new}" class="btn btn-outline"><i class="bi bi-person-plus"></i> Add lead</a>
+            <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor}" class="btn btn-outline"><i class="bi bi-bank"></i> Compare banks</a>
+            <a th:if="${perms == null or perms.canAdd('applications')}" th:href="@{/applications/new}" class="btn btn-primary"><i class="bi bi-folder-plus"></i> Open loan file</a>
+        </div>
+    </div>
+
+    <!-- KPI tiles -->
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        <div class="stat-card stat-brand" th:if="${showMoney}">
+            <i class="stat-ico bi bi-cash-coin"></i>
+            <p class="stat-label">Disbursed this month</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.lakhs(kpi.disbursedThisMonth())}">₹0</p>
+            <p class="stat-sub" th:text="${kpi.filesDisbursedThisMonth()} + ' file(s)'">0 files</p>
+        </div>
+        <div class="stat-card stat-emerald" th:if="${showMoney}">
+            <i class="stat-ico bi bi-percent"></i>
+            <p class="stat-label">Payout earned this month</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(kpi.payoutEarnedThisMonth())}">₹0</p>
+        </div>
+        <div class="stat-card stat-amber" th:if="${showMoney}">
+            <i class="stat-ico bi bi-hourglass-split"></i>
+            <p class="stat-label">Bank payout due</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(kpi.payoutOutstanding())}">₹0</p>
+        </div>
+        <div class="stat-card stat-rose" th:if="${showMoney}">
+            <i class="stat-ico bi bi-send-check"></i>
+            <p class="stat-label">Owed to referrers</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(kpi.referralOwed())}">₹0</p>
+            <p class="stat-sub" th:text="${kpi.referralPendingApproval()} + ' awaiting approval'">0 awaiting</p>
+        </div>
+        <div class="stat-card stat-violet">
+            <i class="stat-ico bi bi-folder2-open"></i>
+            <p class="stat-label">Open loan files</p>
+            <p class="stat-value" th:text="${kpi.openFiles()}">0</p>
+        </div>
+        <div class="stat-card stat-sky">
+            <i class="stat-ico bi bi-funnel"></i>
+            <p class="stat-label">Open leads</p>
+            <p class="stat-value" th:text="${kpi.openLeads()}">0</p>
+            <p class="stat-sub" th:text="${kpi.newLeadsThisMonth()} + ' new · ' + ${kpi.convertedThisMonth()} + ' converted this month'">0 new</p>
+        </div>
+        <div class="stat-card stat-teal" th:unless="${showMoney}">
+            <i class="stat-ico bi bi-telephone"></i>
+            <p class="stat-label">Follow-ups due</p>
+            <p class="stat-value" th:text="${kpi.followUpsDue()}">0</p>
+        </div>
+        <div class="stat-card stat-slate" th:unless="${showMoney}">
+            <i class="stat-ico bi bi-file-earmark-lock"></i>
+            <p class="stat-label">MODD jobs open</p>
+            <p class="stat-value" th:text="${kpi.moddOpen()}">0</p>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <!-- Left: trend + pipeline -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="card p-5" th:if="${showMoney}">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Disbursal and payout - last 6 months</h3>
+                    <a th:href="@{/finance}" class="text-sm text-brand-600 hover:underline">Finance <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <canvas id="trendChart" height="120"></canvas>
+            </div>
+
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Loan file pipeline</h3>
+                    <a th:href="@{/applications/board}" class="text-sm text-brand-600 hover:underline">Open board <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="space-y-2.5">
+                    <a th:each="e : ${stageCounts}" th:href="@{/applications(stage=${e.key.name()})}"
+                       class="flex items-center gap-3 group">
+                        <span class="w-44 shrink-0 text-sm text-slate-600 group-hover:text-brand-700 flex items-center gap-2">
+                            <i th:class="'bi ' + ${e.key.icon} + ' text-slate-400'"></i>
+                            <span th:text="${e.key.label}">Stage</span>
+                        </span>
+                        <span class="meter flex-1"><span th:style="'width:' + ${e.value * 100 / stageMax} + '%'"></span></span>
+                        <span class="w-8 text-right text-sm font-semibold" th:text="${e.value}">0</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Follow-ups due</h3>
+                    <a th:href="@{/leads}" class="text-sm text-brand-600 hover:underline">All leads <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <th:block th:if="${followUps.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-check2-all', title='Nothing due', hint='Follow-ups you schedule on leads appear here on the day.')}"></div></th:block>
+                <div th:unless="${followUps.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Lead</th><th>Loan</th><th>Priority</th><th>Due</th><th>Next action</th></tr></thead>
+                        <tbody>
+                        <tr th:each="l : ${followUps}" class="table-row cursor-pointer" th:data-href="@{'/leads/' + ${enc.encode(l.id)}}">
+                            <td><p class="font-semibold" th:text="${l.name}">Name</p>
+                                <p class="text-xs text-slate-400" th:text="${l.mobile}">mobile</p></td>
+                            <td class="text-sm"><span th:text="${l.loanTypeLabel}">Home loan</span>
+                                <span class="text-slate-400" th:if="${l.loanAmountRequired}" th:text="' · ₹' + ${fmt.lakhs(l.loanAmountRequired)}"></span></td>
+                            <td><span class="badge" th:classappend="'badge-' + ${l.priorityTone}" th:text="${l.priorityLabel}">Warm</span></td>
+                            <td class="whitespace-nowrap text-sm" th:classappend="${l.followUpOverdue} ? 'text-rose-600 font-semibold' : 'text-amber-600 font-semibold'"
+                                th:text="${l.followUpOverdue} ? 'Overdue · ' + ${#temporals.format(l.nextFollowUpDate,'dd MMM')} : 'Today'">Today</td>
+                            <td class="text-xs text-slate-500 max-w-xs" th:text="${l.suggestedAction}">action</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: things that need attention -->
+        <div class="space-y-6">
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-1 flex items-center gap-2"><i class="bi bi-alarm text-rose-500"></i> Sanctions expiring</h3>
+                <p class="text-xs text-slate-400 mb-4">Sanctioned files not yet disbursed whose sanction letter lapses within 15 days.</p>
+                <p th:if="${sanctionsExpiring.isEmpty()}" class="text-sm text-slate-400">None - all clear.</p>
+                <div th:unless="${sanctionsExpiring.isEmpty()}" class="space-y-3">
+                    <a th:each="a : ${sanctionsExpiring}" th:href="@{'/applications/' + ${enc.encode(a.id)}}"
+                       class="block rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 hover:shadow-card">
+                        <p class="text-sm font-semibold" th:text="${a.customerName}">Customer</p>
+                        <p class="text-xs text-slate-500">
+                            <span th:text="${a.code} + ' · ' + (${a.lenderName} ?: 'Lender not chosen')">LA-0001</span>
+                            · valid till <b th:text="${#temporals.format(a.sanctionValidTill,'dd MMM')}">date</b>
+                        </p>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-1 flex items-center gap-2"><i class="bi bi-file-earmark-lock text-brand-600"></i> MODD appointments</h3>
+                <p class="text-xs text-slate-400 mb-4">Sub-registrar appointments in the next 7 days.</p>
+                <p th:if="${moddAppointments.isEmpty()}" class="text-sm text-slate-400">No appointments booked.</p>
+                <div th:unless="${moddAppointments.isEmpty()}" class="space-y-3">
+                    <a th:each="m : ${moddAppointments}" th:href="@{'/modd/' + ${enc.encode(m.id)}}"
+                       class="flex items-start gap-3 rounded-xl border border-slate-100 px-3 py-2.5 hover:bg-slate-50">
+                        <div class="h-10 w-10 shrink-0 rounded-lg bg-brand-50 text-brand-700 grid place-items-center text-center leading-none">
+                            <div>
+                                <p class="text-sm font-bold" th:text="${#temporals.format(m.appointmentAt,'dd')}">01</p>
+                                <p class="text-[10px] uppercase" th:text="${#temporals.format(m.appointmentAt,'MMM')}">Jan</p>
+                            </div>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold truncate" th:text="${m.customerName}">Customer</p>
+                            <p class="text-xs text-slate-500 truncate"
+                               th:text="${#temporals.format(m.appointmentAt,'hh:mm a')} + ' · ' + (${m.subRegistrarOffice} ?: 'Sub-registrar')">time</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card p-5" th:if="${showMoney and kpi.referralPendingApproval() > 0}">
+                <h3 class="font-display font-bold mb-1 flex items-center gap-2"><i class="bi bi-send-check text-amber-500"></i> Referral payouts</h3>
+                <p class="text-sm text-slate-600">
+                    <b th:text="${kpi.referralPendingApproval()}">0</b> payout(s) are waiting for approval.
+                </p>
+                <a th:href="@{/referral-payouts(status='PENDING')}" class="btn btn-outline w-full mt-4"><i class="bi bi-check2-square"></i> Review payouts</a>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Recent activity</h3>
+                <p th:if="${recentActivity.isEmpty()}" class="text-sm text-slate-400">Nothing yet.</p>
+                <div th:unless="${recentActivity.isEmpty()}" class="timeline space-y-4">
+                    <div th:each="a : ${recentActivity}" class="relative">
+                        <span class="timeline-dot" style="top:.2rem"></span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="badge" th:classappend="'badge-' + ${a.tone}" th:text="${a.action}">CREATE</span>
+                            <span class="text-sm font-medium truncate" th:text="${a.entityLabel}">Record</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5" th:if="${a.remarks}" th:text="${a.remarks}">remarks</p>
+                        <p class="text-[11px] text-slate-400"
+                           th:text="(${a.userName} ?: ${a.userEmail}) + ' · ' + ${#temporals.format(a.createdAt,'dd MMM, HH:mm')}">user</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        (function () {
+            var ctx = document.getElementById('trendChart');
+            if (!ctx || !window.Chart) return;
+            var labels = /*[[${trendLabels}]]*/ [];
+            var disbursed = /*[[${trendDisbursed}]]*/ [];
+            var earned = /*[[${trendEarned}]]*/ [];
+            var css = getComputedStyle(document.documentElement);
+            var brand600 = css.getPropertyValue('--brand-600').trim() || '#4f46e5';
+            new Chart(ctx, {
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { type: 'bar', label: 'Disbursed (₹ lakh)', data: disbursed.map(function (v) { return Math.round(v / 1000) / 100; }),
+                          backgroundColor: brand600, borderRadius: 6, maxBarThickness: 34, yAxisID: 'y' },
+                        { type: 'line', label: 'Payout earned (₹)', data: earned, borderColor: '#10b981',
+                          backgroundColor: '#10b981', tension: .3, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: '₹ lakh' } },
+                        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

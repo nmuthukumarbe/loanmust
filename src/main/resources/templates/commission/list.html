@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Bank Payouts</title></head>
+<body>
+<div layout:fragment="page-title">Bank Payouts</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Bank payouts</h2>
+            <p class="text-sm text-slate-500">What each lender owes the agency, invoices raised and money received.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:if="${perms == null or perms.canView('reports')}" th:href="@{/reports/bank-payouts}" class="btn btn-outline">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Receivable report</a>
+        </div>
+    </div>
+
+    <div class="mb-5 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 text-sm text-brand-800 flex items-start gap-3">
+        <i class="bi bi-info-circle text-brand-600 mt-0.5"></i>
+        <p>Raised automatically on every disbursement at the payout % on the file. Differences over ₹1 are flagged.
+            Record the invoice you send the bank, then the receipt when the money lands.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card stat-amber">
+            <i class="stat-ico bi bi-hourglass-split"></i>
+            <p class="stat-label">Outstanding</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(outstanding)}">₹0</p>
+        </div>
+        <div class="stat-card stat-rose">
+            <i class="stat-ico bi bi-exclamation-octagon"></i>
+            <p class="stat-label">Overdue</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(overdue)}">₹0</p>
+        </div>
+        <div class="stat-card stat-emerald">
+            <i class="stat-ico bi bi-bank"></i>
+            <p class="stat-label">Received</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(received)}">₹0</p>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/commission}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[16rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search file, customer, lender or invoice…" class="form-input w-full pl-9"/>
+            </div>
+            <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">Any status</option>
+                <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                        th:selected="${status != null and status.name() == s.name()}">Status</option>
+            </select>
+            <select name="lenderId" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">All lenders</option>
+                <option th:each="l : ${lenders}" th:value="${l.id}" th:text="${l.name}"
+                        th:selected="${lenderId != null and lenderId == l.id}">Lender</option>
+            </select>
+            <a th:href="@{/commission}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${payoutPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-percent', title='No bank payouts here', hint='A payout entry is raised automatically each time a disbursement is recorded on a loan file.')}"></div></th:block>
+
+        <div th:unless="${payoutPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Lender</th><th>File</th><th>Disbursed</th><th class="text-right">Payout</th>
+                    <th class="text-right">Expected</th><th>Invoice</th><th>Received</th><th class="text-right">Shortfall</th>
+                    <th>Status</th><th class="text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${payoutPage.content}" class="table-row align-top"
+                    th:with="open=${b.status == null or (b.status.name() != 'PAID' and b.status.name() != 'CANCELLED')}">
+                    <td class="font-medium text-sm" th:text="${b.lenderName} ?: '—'">Lender</td>
+                    <td>
+                        <a th:if="${b.applicationId != null}" th:href="@{'/applications/' + ${enc.encode(b.applicationId)}}"
+                           class="text-sm font-semibold hover:text-brand-700 whitespace-nowrap" th:text="${b.applicationCode}">LF-0001</a>
+                        <span th:if="${b.applicationId == null}" class="text-sm font-semibold" th:text="${b.applicationCode} ?: '—'">LF-0001</span>
+                        <p class="text-xs text-slate-400" th:text="${b.customerName}">Customer</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <p class="text-sm" th:text="'₹' + ${fmt.inr(b.disbursedAmount)}">₹0</p>
+                        <p class="text-xs text-slate-400" th:if="${b.disbursedOn}" th:text="${#temporals.format(b.disbursedOn,'dd MMM yyyy')}">date</p>
+                    </td>
+                    <td class="text-right text-sm whitespace-nowrap" th:text="${fmt.pct(b.payoutPercent)}">0.5%</td>
+                    <td class="text-right font-semibold whitespace-nowrap" th:text="'₹' + ${fmt.inr(b.expectedAmount)}">₹0</td>
+                    <td class="whitespace-nowrap">
+                        <th:block th:if="${b.invoiceNumber}">
+                            <p class="text-sm" th:text="${b.invoiceNumber}">INV-1</p>
+                            <p class="text-xs text-slate-400" th:if="${b.invoiceDate}" th:text="${#temporals.format(b.invoiceDate,'dd MMM yyyy')}">date</p>
+                        </th:block>
+                        <span th:unless="${b.invoiceNumber}" class="text-xs text-slate-300">Not invoiced</span>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <th:block th:if="${b.receivedAmount != null}">
+                            <p class="text-sm" th:text="'₹' + ${fmt.inr(b.receivedAmount)}">₹0</p>
+                            <p class="text-xs text-slate-400">
+                                <span th:if="${b.receivedOn}" th:text="${#temporals.format(b.receivedOn,'dd MMM yyyy')}">date</span>
+                                <span th:if="${b.receiptReference}" th:text="' · ' + ${b.receiptReference}"></span>
+                            </p>
+                        </th:block>
+                        <span th:if="${b.receivedAmount == null}" class="text-xs text-slate-300">—</span>
+                    </td>
+                    <td class="text-right whitespace-nowrap text-sm"
+                        th:classappend="${b.shortfall.signum() > 0} ? 'text-rose-600 font-semibold' : 'text-slate-500'"
+                        th:text="'₹' + ${fmt.inr(b.shortfall)}">₹0</td>
+                    <td>
+                        <span class="badge whitespace-nowrap" th:classappend="'badge-' + ${b.statusTone}" th:text="${b.statusLabel}">Unpaid</span>
+                        <p th:if="${b.mismatch}" class="text-[11px] text-amber-600 mt-1 whitespace-nowrap"
+                           title="Received amount differs from expected by more than ₹1">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Amount mismatch</p>
+                        <p th:if="${b.remarks}" class="text-[11px] text-slate-400 mt-1 max-w-[10rem]" th:text="${b.remarks}">remarks</p>
+                    </td>
+                    <td class="text-right">
+                        <details th:if="${open}" class="js-action inline-block text-left">
+                            <summary class="btn btn-outline btn-sm cursor-pointer list-none"><i class="bi bi-three-dots"></i> Record</summary>
+                            <div class="mt-2 w-64 space-y-3">
+                                <form th:action="@{'/commission/' + ${enc.encode(b.id)} + '/invoice'}" method="post"
+                                      class="rounded-xl border border-slate-200 p-3 space-y-2">
+                                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide"><i class="bi bi-receipt"></i> Invoice</p>
+                                    <input type="text" name="invoiceNumber" required th:value="${b.invoiceNumber}" class="form-input" placeholder="Invoice number"/>
+                                    <input type="date" name="invoiceDate" th:value="${b.invoiceDate != null} ? ${b.invoiceDate} : ${today}" class="form-input"/>
+                                    <button type="submit" class="btn btn-outline btn-sm w-full">Save invoice</button>
+                                </form>
+                                <form th:action="@{'/commission/' + ${enc.encode(b.id)} + '/receipt'}" method="post"
+                                      class="rounded-xl border border-slate-200 p-3 space-y-2">
+                                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide"><i class="bi bi-cash-coin"></i> Receipt</p>
+                                    <input type="number" step="0.01" min="0" name="amount" required class="form-input"
+                                           th:value="${b.shortfall.signum() > 0} ? ${b.shortfall} : ${b.expectedAmount}" placeholder="Amount received"/>
+                                    <input type="date" name="receivedOn" th:value="${today}" class="form-input"/>
+                                    <input type="text" name="reference" class="form-input" placeholder="UTR / credit reference"/>
+                                    <button type="submit" class="btn btn-success btn-sm w-full">Record receipt</button>
+                                </form>
+                                <form th:action="@{'/commission/' + ${enc.encode(b.id)} + '/archive'}" method="post"
+                                      class="rounded-xl border border-rose-100 p-3 space-y-2"
+                                      data-confirm="Write off this payout? It will no longer count as outstanding.">
+                                    <p class="text-xs font-semibold text-rose-500 uppercase tracking-wide"><i class="bi bi-x-octagon"></i> Write off</p>
+                                    <input type="text" name="remarks" class="form-input" placeholder="Reason"/>
+                                    <button type="submit" class="btn btn-danger btn-sm w-full">Write off</button>
+                                </form>
+                            </div>
+                        </details>
+                        <span th:unless="${open}" class="text-xs text-slate-300">—</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${payoutPage}, base='/commission')}"></div>
+    </div>
+</div>
+</body>
+</html>

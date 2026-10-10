@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${customer.name}">Customer</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${customer.name}">Customer</div>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Customers', parentUrl='/customers', current=${customer.name})}"></div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header + profile -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="h-14 w-14 shrink-0 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center text-lg font-display font-bold"
+                             th:text="${customer.initials}">CU</div>
+                        <div class="min-w-0">
+                            <h2 class="font-display font-bold text-xl" th:text="${customer.name}">Name</h2>
+                            <p class="text-sm text-slate-500">
+                                <span th:text="${customer.code}">CU-0001</span>
+                                <span th:if="${customer.city}" th:text="' · ' + ${customer.city}"></span>
+                            </p>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="badge badge-slate" th:text="${customer.employmentLabel}">Salaried</span>
+                                <span th:if="${customer.cibilScore}" class="badge" th:classappend="'badge-' + ${customer.cibilTone}"
+                                      th:text="'CIBIL ' + ${customer.cibilScore}">CIBIL 750</span>
+                                <span th:if="${customer.referralPartnerName}" class="badge badge-violet"
+                                      th:text="'Referred by ' + ${customer.referralPartnerName}">Referred</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:if="${perms == null or perms.canEdit('customers')}" th:href="@{'/customers/' + ${enc.encode(customer.id)} + '/edit'}" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+                        <a th:if="${whatsappLink}" th:href="${whatsappLink}" target="_blank" rel="noopener" class="btn btn-success"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                        <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor(customerId=${enc.encode(customer.id)})}" class="btn btn-outline"><i class="bi bi-bank"></i> Compare banks</a>
+                        <a th:if="${perms == null or perms.canAdd('applications')}" th:href="@{/applications/new(customerId=${enc.encode(customer.id)})}" class="btn btn-primary"><i class="bi bi-folder-plus"></i> Open loan file</a>
+                    </div>
+                </div>
+
+                <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Mobile</dt><dd class="font-medium" th:text="${customer.mobile} ?: '—'">—</dd></div>
+                    <div th:if="${customer.alternateMobile}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Alternate mobile</dt><dd class="font-medium" th:text="${customer.alternateMobile}">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Email</dt><dd class="font-medium break-all" th:text="${customer.email} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Date of birth</dt>
+                        <dd class="font-medium">
+                            <span th:if="${customer.dateOfBirth}" th:text="${#temporals.format(customer.dateOfBirth,'dd MMM yyyy')} + ' (' + ${customer.age} + ' yrs)'">date</span>
+                            <span th:unless="${customer.dateOfBirth}">—</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Gender</dt>
+                        <dd class="font-medium" th:text="${customer.gender != null} ? ${customer.gender.label} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">PAN</dt><dd class="font-medium uppercase" th:text="${customer.pan} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Aadhaar</dt>
+                        <dd class="font-medium" th:text="${customer.aadhaarLast4 != null} ? 'XXXX XXXX ' + ${customer.aadhaarLast4} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Employer / business</dt><dd class="font-medium" th:text="${customer.employerName} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Experience</dt>
+                        <dd class="font-medium" th:text="${customer.workExperienceYears != null} ? ${customer.workExperienceYears} + ' yrs' : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Monthly income</dt>
+                        <dd class="font-medium" th:text="${customer.monthlyIncome != null} ? '₹' + ${fmt.inr(customer.monthlyIncome)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Existing EMIs</dt>
+                        <dd class="font-medium" th:text="${customer.existingEmi != null} ? '₹' + ${fmt.inr(customer.existingEmi)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">CIBIL</dt>
+                        <dd class="font-medium">
+                            <span th:if="${customer.cibilScore}" class="badge" th:classappend="'badge-' + ${customer.cibilTone}" th:text="${customer.cibilScore}">750</span>
+                            <span th:unless="${customer.cibilScore}">Not checked</span>
+                            <span th:if="${customer.cibilCheckedOn}" class="text-xs text-slate-400"
+                                  th:text="' on ' + ${#temporals.format(customer.cibilCheckedOn,'dd MMM yyyy')}"></span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Owner</dt><dd class="font-medium" th:text="${customer.ownerName} ?: 'Unassigned'">—</dd></div>
+                    <div class="col-span-2 sm:col-span-3" th:if="${customer.address != null or customer.city != null}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Address</dt>
+                        <dd class="text-slate-600 mt-1">
+                            <span th:if="${customer.address}" th:text="${customer.address} + ', '">address</span>
+                            <span th:if="${customer.city}" th:text="${customer.city}"></span><span th:if="${customer.state}" th:text="', ' + ${customer.state}"></span>
+                            <span th:if="${customer.pincode}" th:text="' - ' + ${customer.pincode}"></span>
+                        </dd></div>
+                    <div class="col-span-2 sm:col-span-3" th:if="${customer.notes}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Notes</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${customer.notes}">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Loan files -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Loan files</h3>
+                    <span class="badge badge-slate" th:text="${applications.size()} + ' on record'">0</span>
+                </div>
+                <p th:if="${applications.isEmpty()}" class="text-sm text-slate-400">No loan file yet. Compare banks first, then open a file with the chosen lender.</p>
+                <div th:unless="${applications.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>File</th><th>Lender</th><th>Loan</th><th class="text-right">Amount</th><th>Stage</th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${applications}" class="table-row cursor-pointer" th:data-href="@{'/applications/' + ${enc.encode(a.id)}}">
+                            <td><a th:href="@{'/applications/' + ${enc.encode(a.id)}}" class="font-semibold text-brand-600 hover:underline" th:text="${a.code}">LF-0001</a></td>
+                            <td th:text="${a.lenderName} ?: '—'">Bank</td>
+                            <td class="text-slate-600" th:text="${a.loanTypeLabel}">Home loan</td>
+                            <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(a.loanAmount)}">₹0</td>
+                            <td><span class="badge" th:classappend="'badge-' + ${a.stageTone}" th:text="${a.stageLabel}">Stage</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Proposals -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Bank comparisons sent</h3>
+                    <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor(customerId=${enc.encode(customer.id)})}" class="btn btn-outline btn-sm"><i class="bi bi-plus-lg"></i> New comparison</a>
+                </div>
+                <p th:if="${proposals.isEmpty()}" class="text-sm text-slate-400">No proposal saved for this customer yet.</p>
+                <div th:unless="${proposals.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Proposal</th><th>Loan</th><th>Recommended</th><th class="text-right">EMI</th><th>Valid until</th><th>Views</th></tr></thead>
+                        <tbody>
+                        <tr th:each="p : ${proposals}" class="table-row cursor-pointer" th:data-href="@{'/advisor/proposals/' + ${enc.encode(p.id)}}">
+                            <td>
+                                <p class="font-semibold" th:text="${p.code}">PR-0001</p>
+                                <p class="text-xs text-slate-400" th:if="${p.createdAt}" th:text="${#temporals.format(p.createdAt,'dd MMM yyyy')}">date</p>
+                            </td>
+                            <td class="whitespace-nowrap">
+                                <p th:text="${p.loanTypeLabel}">Home loan</p>
+                                <p class="text-xs text-slate-400" th:text="'₹' + ${fmt.lakhs(p.loanAmount)}">₹45 L</p>
+                            </td>
+                            <td>
+                                <span th:if="${p.recommendedLenderName}" th:text="${p.recommendedLenderName} + ' · ' + ${fmt.pct(p.recommendedRate)}">Bank · 8.5%</span>
+                                <span th:unless="${p.recommendedLenderName}" class="text-slate-400">None eligible</span>
+                            </td>
+                            <td class="text-right whitespace-nowrap" th:text="${p.recommendedEmi != null} ? '₹' + ${fmt.inr(p.recommendedEmi)} : '—'">₹0</td>
+                            <td class="whitespace-nowrap">
+                                <span th:if="${p.validUntil}" th:text="${#temporals.format(p.validUntil,'dd MMM yyyy')}">date</span>
+                                <span th:if="${p.expired}" class="badge badge-rose ml-1">Expired</span>
+                            </td>
+                            <td class="text-slate-500" th:text="${p.viewCount} ?: 0">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Fee receipts -->
+            <div class="card p-6" th:if="${receipts != null and !receipts.isEmpty()}">
+                <h3 class="font-display font-bold mb-4">Fee receipts</h3>
+                <div class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>Receipt</th><th>Fee</th><th>Date</th><th>Mode</th><th class="text-right">Amount</th></tr></thead>
+                        <tbody>
+                        <tr th:each="r : ${receipts}" class="table-row">
+                            <td>
+                                <p class="font-semibold" th:text="${r.receiptNo}">RC-0001</p>
+                                <p class="text-xs text-slate-400" th:if="${r.applicationCode}" th:text="${r.applicationCode}">LF</p>
+                            </td>
+                            <td th:text="${r.feeTypeLabel}">Login fee</td>
+                            <td class="whitespace-nowrap"><span th:if="${r.receivedOn}" th:text="${#temporals.format(r.receivedOn,'dd MMM yyyy')}">date</span></td>
+                            <td class="text-slate-500" th:text="${r.paymentMode != null} ? ${r.paymentMode.label} : '—'">UPI</td>
+                            <td class="text-right whitespace-nowrap font-semibold" th:text="'₹' + ${fmt.inr(r.amount)}">₹0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-3">At a glance</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between"><span class="text-slate-500">Loan files</span><span class="font-semibold" th:text="${applications.size()}">0</span></div>
+                    <div class="flex items-center justify-between"><span class="text-slate-500">Proposals</span><span class="font-semibold" th:text="${proposals.size()}">0</span></div>
+                    <div class="flex items-center justify-between"><span class="text-slate-500">Customer since</span>
+                        <span class="font-semibold" th:if="${customer.createdAt}" th:text="${#temporals.format(customer.createdAt,'dd MMM yyyy')}">date</span></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-4">Keep income, EMIs and CIBIL current - Rate Compare reads them to rank every bank.</p>
+            </div>
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

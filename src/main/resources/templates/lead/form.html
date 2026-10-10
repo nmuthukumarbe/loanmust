@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${lead.id == null} ? 'Add lead' : 'Edit lead'">Lead</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${lead.id == null} ? 'Add lead' : 'Edit lead'">Lead</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Leads', parentUrl='/leads', current=${lead.id == null} ? 'New lead' : ${lead.name})}"></div>
+
+        <form th:action="@{/leads/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${lead.id}"/>
+
+            <!-- Who -->
+            <div>
+                <h3 class="font-display font-bold mb-4">Who is enquiring</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Full name</label>
+                        <input type="text" name="name" th:value="${lead.name}" required maxlength="120" class="form-input" placeholder="e.g. Ramesh Gupta"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='mobile', value=${lead.mobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">Email <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="email" name="email" th:value="${lead.email}" class="form-input" placeholder="name@example.com"/>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${lead.city}" class="form-input" placeholder="e.g. Pune"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channel -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Where it came from</h3>
+                <p class="text-xs text-slate-400 mb-4">The channel drives builder-wise reports and the referral partner's payout when the loan disburses.</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Source</label>
+                        <select name="source" id="leadSource" class="form-select">
+                            <option th:each="s : ${sources}" th:value="${s.name()}" th:text="${s.label}"
+                                    th:selected="${lead.source != null and lead.source.name() == s.name()}">Source</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Source detail <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="text" name="sourceDetail" th:value="${lead.sourceDetail}" class="form-input"
+                               placeholder="LIC branch / agent, campaign, website form…"/>
+                    </div>
+                    <div data-source-for="BUILDER">
+                        <label class="form-label">Builder</label>
+                        <select name="builderId" class="form-select">
+                            <option value="">Select builder</option>
+                            <option th:each="b : ${builders}" th:value="${b.id}" th:text="${b.name}"
+                                    th:selected="${lead.builderId != null and lead.builderId == b.id}">Builder</option>
+                        </select>
+                    </div>
+                    <div data-source-for="BUILDER">
+                        <label class="form-label">Project</label>
+                        <select name="projectId" class="form-select">
+                            <option value="">Select project</option>
+                            <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.builderName} + ' · ' + ${p.name}"
+                                    th:selected="${lead.projectId != null and lead.projectId == p.id}">Builder · Project</option>
+                        </select>
+                    </div>
+                    <div data-source-for="REFERRAL" class="sm:col-span-2">
+                        <label class="form-label">Referral partner</label>
+                        <select name="referralPartnerId" class="form-select">
+                            <option value="">Select partner</option>
+                            <option th:each="r : ${partners}" th:value="${r.id}"
+                                    th:text="${r.name} + ' (' + ${r.code} + ')' + (${r.city} != null ? ' · ' + ${r.city} : '')"
+                                    th:selected="${lead.referralPartnerId != null and lead.referralPartnerId == r.id}">Partner</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requirement -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Loan requirement &amp; profile</h3>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Loan type</label>
+                        <select name="loanType" class="form-select">
+                            <option th:each="t : ${loanTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                    th:selected="${lead.loanType != null and lead.loanType.name() == t.name()}">Home loan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Loan amount required (₹)</label>
+                        <input type="number" step="1" min="0" name="loanAmountRequired" th:value="${lead.loanAmountRequired}" class="form-input" placeholder="e.g. 4500000"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Property value (₹)</label>
+                        <input type="number" step="1" min="0" name="propertyValue" th:value="${lead.propertyValue}" class="form-input" placeholder="Agreement value"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Employment</label>
+                        <select name="employmentType" class="form-select">
+                            <option value="">Not known yet</option>
+                            <option th:each="e : ${employmentTypes}" th:value="${e.name()}" th:text="${e.label}"
+                                    th:selected="${lead.employmentType != null and lead.employmentType.name() == e.name()}">Salaried</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Net monthly income (₹)</label>
+                        <input type="number" step="1" min="0" name="monthlyIncome" th:value="${lead.monthlyIncome}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Existing EMIs (₹ / month)</label>
+                        <input type="number" step="1" min="0" name="existingEmi" th:value="${lead.existingEmi}" class="form-input" placeholder="0"/>
+                    </div>
+                    <div>
+                        <label class="form-label">CIBIL score</label>
+                        <input type="number" step="1" min="300" max="900" name="cibilScore" th:value="${lead.cibilScore}" class="form-input" placeholder="300 – 900"/>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-3">
+                        <label class="form-label">Requirement in their words</label>
+                        <textarea name="requirement" rows="3" class="form-textarea" th:text="${lead.requirement}"
+                                  placeholder="e.g. 2 BHK in Wakad, booking amount paid, wants the lowest EMI"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Working -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Working the lead</h3>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Assign to</label>
+                        <select name="assignedUserId" class="form-select">
+                            <option value="">Unassigned</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' — ' + ${u.roleLabel}"
+                                    th:selected="${lead.assignedUserId != null and lead.assignedUserId == u.id}">User</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                                    th:selected="${lead.status != null and lead.status.name() == s.name()}">Status</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Next follow-up</label>
+                        <input type="date" name="nextFollowUpDate" th:value="${lead.nextFollowUpDate}" class="form-input"/>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-3">
+                        <label class="form-label">Lost / not-eligible reason <span class="text-slate-400 font-normal">(if closed)</span></label>
+                        <input type="text" name="lostReason" th:value="${lead.lostReason}" class="form-input"
+                               placeholder="e.g. Low CIBIL, went with another DSA, plan dropped"/>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-3">
+                        <label class="form-label">Internal notes</label>
+                        <textarea name="notes" rows="2" class="form-textarea" th:text="${lead.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save lead</button>
+                <a th:href="${lead.id == null} ? @{/leads} : @{'/leads/' + ${enc.encode(lead.id)}}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script>
+    (function () {
+        var source = document.getElementById('leadSource');
+        if (!source) return;
+        function sync() {
+            document.querySelectorAll('[data-source-for]').forEach(function (el) {
+                var off = el.getAttribute('data-source-for') !== source.value;
+                el.classList.toggle('hidden', off);
+                // Disabled fields are not submitted, so switching away from Builder/Referral clears the link.
+                el.querySelectorAll('select').forEach(function (s) { s.disabled = off; });
+            });
+        }
+        source.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+</th:block>
+</body>
+</html>

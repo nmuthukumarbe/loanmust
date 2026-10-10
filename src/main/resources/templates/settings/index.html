@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Settings</title></head>
+<body>
+<div layout:fragment="page-title">Settings</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+                <h2 class="font-display font-bold text-xl">Agency settings</h2>
+                <p class="text-sm text-slate-500">Your agency profile, code formats and the defaults the system uses for referral payouts, MODD and proposals.</p>
+            </div>
+        </div>
+
+        <form th:action="@{/settings/save}" method="post" class="space-y-6">
+
+            <!-- Agency profile -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Agency profile</h3>
+                <p class="text-xs text-slate-400 mb-4">Printed on receipts and proposals, and shown in the sidebar.</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Legal name</label>
+                        <input type="text" name="name" th:value="${agency.name}" required class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Trade name <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="text" name="tradeName" th:value="${agency.tradeName}" class="form-input" placeholder="Name customers know you by"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Owner name</label>
+                        <input type="text" name="ownerName" th:value="${agency.ownerName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">DSA code</label>
+                        <input type="text" name="dsaCode" th:value="${agency.dsaCode}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" th:value="${agency.email}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" th:value="${agency.phone}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">GSTIN</label>
+                        <input type="text" name="gstin" th:value="${agency.gstin}" class="form-input uppercase" maxlength="15" placeholder="27ABCDE1234F1Z5"/>
+                    </div>
+                    <div>
+                        <label class="form-label">PAN</label>
+                        <input type="text" name="pan" th:value="${agency.pan}" class="form-input uppercase" maxlength="10" placeholder="ABCDE1234F"/>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" rows="2" class="form-textarea" th:text="${agency.address}"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${agency.city}" class="form-input"/>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label">State</label>
+                            <input type="text" name="state" th:value="${agency.state}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">PIN code</label>
+                            <input type="text" name="pincode" th:value="${agency.pincode}" class="form-input" inputmode="numeric" maxlength="6"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code prefixes -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Code prefixes</h3>
+                <p class="text-xs text-slate-400 mb-4">New records are numbered with these prefixes, e.g. LD-0001. Existing codes are not changed.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Leads</label>
+                        <input type="text" name="leadPrefix" th:value="${agency.leadPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Customers</label>
+                        <input type="text" name="customerPrefix" th:value="${agency.customerPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Loan files</label>
+                        <input type="text" name="applicationPrefix" th:value="${agency.applicationPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Referral partners</label>
+                        <input type="text" name="referralPrefix" th:value="${agency.referralPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Proposals</label>
+                        <input type="text" name="proposalPrefix" th:value="${agency.proposalPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Fee receipts</label>
+                        <input type="text" name="receiptPrefix" th:value="${agency.receiptPrefix}" class="form-input uppercase" maxlength="6"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referral programme -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Referral programme</h3>
+                <p class="text-xs text-slate-400 mb-4">Used when a partner has no payout rule of their own, and for TDS on every referral payout.</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Default referral payout (% of disbursal)</label>
+                        <input type="number" step="0.01" min="0" name="defaultReferralPercent" th:value="${agency.defaultReferralPercent}" class="form-input" placeholder="0.25"/>
+                    </div>
+                    <div>
+                        <label class="form-label">TDS on referral payouts (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="referralTdsPercent" th:value="${agency.referralTdsPercent}" class="form-input" placeholder="5"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Deducted from the gross payout; confirm the applicable rate with your CA.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODD -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">MODD charges</h3>
+                <p class="text-xs text-slate-400 mb-4">Defaults for estimating Memorandum of Deposit of Title Deeds charges to the customer.</p>
+                <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-start gap-3">
+                    <i class="bi bi-exclamation-triangle-fill text-amber-500 mt-0.5"></i>
+                    <p>Stamp duty on MODD is state-specific and changes; confirm the current rate for your state.</p>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Stamp duty (% of loan)</label>
+                        <input type="number" step="0.001" min="0" name="moddStampDutyPercent" th:value="${agency.moddStampDutyPercent}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Stamp duty cap (₹)</label>
+                        <input type="number" step="0.01" min="0" name="moddStampDutyCap" th:value="${agency.moddStampDutyCap}" class="form-input" placeholder="Leave blank for no cap"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Service charge (₹)</label>
+                        <input type="number" step="0.01" min="0" name="moddServiceCharge" th:value="${agency.moddServiceCharge}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advisor -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Rate compare &amp; proposals</h3>
+                <p class="text-xs text-slate-400 mb-4">Used when comparing banks and generating proposals for a customer.</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">GST on processing fee (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="processingFeeGstPercent" th:value="${agency.processingFeeGstPercent}" class="form-input" placeholder="18"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Proposal validity (days)</label>
+                        <input type="number" step="1" min="1" name="proposalValidityDays" th:value="${agency.proposalValidityDays}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accent -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Workspace accent</h3>
+                <p class="text-xs text-slate-400 mb-4">The colour used for buttons, highlights and the sidebar for everyone in your agency.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <label th:each="p : ${palettes}"
+                           class="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 cursor-pointer hover:bg-slate-50 has-[:checked]:border-brand-500 has-[:checked]:ring-2 has-[:checked]:ring-brand-200">
+                        <input type="radio" name="accentColor" th:value="${p.id}" th:checked="${agency.accentColor == p.id}" class="h-4 w-4"/>
+                        <span class="h-5 w-5 rounded-full shrink-0 border border-black/10" th:style="'background:' + ${p.swatch}"></span>
+                        <span class="text-sm font-medium" th:text="${p.label}">Indigo</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save settings</button>
+                <a th:href="@{/dashboard}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

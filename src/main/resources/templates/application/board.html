@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Pipeline board</title></head>
+<body>
+<div layout:fragment="page-title">Pipeline board</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Pipeline board</h2>
+            <p class="text-sm text-slate-500">Open loan files by stage. Each column shows the latest files; the header counts them all.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a th:href="@{/applications}" class="btn btn-outline"><i class="bi bi-list-ul"></i> List view</a>
+            <a th:if="${perms == null or perms.canAdd('applications')}" th:href="@{/applications/new}" class="btn btn-primary"><i class="bi bi-folder-plus"></i> Open loan file</a>
+        </div>
+    </div>
+
+    <div th:if="${lockedToOwn}" class="mb-4 rounded-xl bg-brand-50 border border-brand-100 px-4 py-2.5 text-sm text-brand-800">
+        <i class="bi bi-info-circle"></i> You are seeing the loan files assigned to you.
+    </div>
+
+    <div class="overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+        <div class="flex gap-4 items-start">
+            <div th:each="e : ${board}" class="board-col w-72 shrink-0 rounded-2xl bg-slate-100/70 border border-slate-200 p-3">
+                <div class="flex items-start justify-between gap-2 px-1 mb-3">
+                    <div class="min-w-0">
+                        <p class="font-display font-bold text-sm truncate">
+                            <i th:class="'bi ' + ${e.value.stage().icon} + ' text-brand-600'"></i>
+                            <span th:text="${e.value.stage().label}">Stage</span>
+                        </p>
+                        <p class="text-xs text-slate-500" th:text="'₹' + ${fmt.lakhs(e.value.value())}">₹0</p>
+                    </div>
+                    <span class="badge" th:classappend="'badge-' + ${e.value.stage().tone}" th:text="${e.value.count()}">0</span>
+                </div>
+
+                <p th:if="${e.value.files().isEmpty()}" class="text-xs text-slate-400 text-center py-6">No files here.</p>
+
+                <div class="space-y-2.5">
+                    <a th:each="a : ${e.value.files()}" th:href="@{'/applications/' + ${enc.encode(a.id)}}" class="board-card block">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[11px] font-semibold text-slate-400" th:text="${a.code}">LA-0001</span>
+                            <span th:if="${a.sanctionExpiring}" class="text-[11px] text-rose-600 font-semibold" title="Sanction validity ends soon">
+                                <i class="bi bi-exclamation-triangle-fill"></i></span>
+                        </div>
+                        <p class="font-semibold text-sm truncate mt-0.5" th:text="${a.customerName}">Customer</p>
+                        <p class="text-xs text-slate-500 truncate" th:text="${a.lenderName} ?: 'Lender not chosen'">Lender</p>
+                        <div class="flex items-center justify-between gap-2 mt-2">
+                            <span class="text-sm font-bold text-brand-700" th:text="'₹' + ${fmt.lakhs(a.loanAmount)}">₹45 L</span>
+                            <span class="text-[11px]" th:classappend="${a.daysInStage > 7} ? 'text-amber-600 font-semibold' : 'text-slate-400'"
+                                  th:text="${a.daysInStage} + 'd in stage'">0d</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1 truncate">
+                            <i class="bi bi-person"></i> <span th:text="${a.assignedUserName} ?: 'Unassigned'">Executive</span>
+                        </p>
+                    </a>
+                </div>
+
+                <a th:if="${e.value.count() > e.value.files().size()}"
+                   th:href="@{/applications(stage=${e.value.stage().name()})}"
+                   class="block text-center text-xs text-brand-600 hover:underline mt-3"
+                   th:text="'View all ' + ${e.value.count()} + ' files'">View all</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

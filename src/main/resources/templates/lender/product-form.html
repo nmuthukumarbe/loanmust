@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${product.id == null} ? 'Add scheme' : 'Edit scheme'">Scheme</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${product.id == null} ? 'Add scheme' : 'Edit scheme'">Scheme</div>
+
+<div layout:fragment="content">
+    <div class="max-w-5xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Banks &amp; Rates', parentUrl='/lenders', current=${lender != null ? lender.displayName : 'Scheme'})}"></div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+            <form th:action="@{/lenders/products/save}" method="post" class="card p-6 space-y-6 lg:col-span-2">
+                <input type="hidden" name="id" th:value="${product.id}"/>
+                <input type="hidden" name="lenderId" th:value="${product.lenderId}"/>
+
+                <div class="flex items-center gap-3" th:if="${lender != null}">
+                    <div class="h-11 w-11 shrink-0 rounded-xl grid place-items-center text-white text-xs font-bold"
+                         th:style="'background:' + ${lender.brandColor}" th:text="${lender.initials}">SBI</div>
+                    <div>
+                        <p class="text-xs text-slate-400" th:text="${product.id == null} ? 'New scheme for' : 'Scheme of'">Scheme of</p>
+                        <p class="font-display font-bold text-lg" th:text="${lender.displayName}">Lender</p>
+                    </div>
+                </div>
+
+                <!-- Scheme -->
+                <div>
+                    <h3 class="font-display font-bold mb-4">Scheme &amp; rate</h3>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div class="sm:col-span-2 lg:col-span-3">
+                            <label class="form-label">Scheme name</label>
+                            <input type="text" name="name" th:value="${product.name}" required class="form-input" placeholder="e.g. Regular Home Loan (salaried)"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Loan type</label>
+                            <select name="loanType" class="form-select">
+                                <option th:each="t : ${loanTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                        th:selected="${product.loanType != null and product.loanType.name() == t.name()}">Type</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Rate type</label>
+                            <select name="rateType" class="form-select">
+                                <option th:each="r : ${rateTypes}" th:value="${r.name()}" th:text="${r.label}"
+                                        th:selected="${product.rateType != null and product.rateType.name() == r.name()}">Rate type</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Benchmark</label>
+                            <input type="text" name="benchmark" th:value="${product.benchmark}" list="benchmarkOptions" class="form-input" placeholder="e.g. RLLR / EBLR"/>
+                            <datalist id="benchmarkOptions">
+                                <option value="Repo (RLLR)"></option>
+                                <option value="EBLR"></option>
+                                <option value="MCLR"></option>
+                                <option value="PLR / RPLR"></option>
+                            </datalist>
+                        </div>
+                        <div>
+                            <label class="form-label">Rate from (% p.a.)</label>
+                            <input type="number" step="0.01" min="0" name="rateMin" th:value="${product.rateMin}" required class="form-input" placeholder="8.35"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Rate to (% p.a.)</label>
+                            <input type="number" step="0.01" min="0" name="rateMax" th:value="${product.rateMax}" class="form-input" placeholder="9.50"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Women's concession (%)</label>
+                            <input type="number" step="0.01" min="0" name="womenConcession" th:value="${product.womenConcession}" class="form-input" placeholder="0.05"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Best-rate CIBIL</label>
+                            <input type="number" step="1" min="300" max="900" name="bestRateCibil" th:value="${product.bestRateCibil}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Minimum CIBIL</label>
+                            <input type="number" step="1" min="300" max="900" name="minCibil" th:value="${product.minCibil}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Rate confirmed on</label>
+                            <input type="date" name="rateUpdatedOn" th:value="${product.rateUpdatedOn}" class="form-input"/>
+                            <p class="text-[11px] text-slate-400 mt-1">Set to today automatically when the rate changes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charges -->
+                <div class="border-t border-slate-100 pt-6">
+                    <h3 class="font-display font-bold mb-4">Processing fee &amp; charges</h3>
+                    <div class="grid sm:grid-cols-3 gap-5">
+                        <div>
+                            <label class="form-label">Processing fee (%)</label>
+                            <input type="number" step="0.01" min="0" name="processingFeePercent" th:value="${product.processingFeePercent}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Fee minimum (₹)</label>
+                            <input type="number" step="1" min="0" name="processingFeeMin" th:value="${product.processingFeeMin}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Fee maximum (₹)</label>
+                            <input type="number" step="1" min="0" name="processingFeeMax" th:value="${product.processingFeeMax}" class="form-input"/>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="form-label">Prepayment / foreclosure charges</label>
+                            <input type="text" name="prepaymentCharges" th:value="${product.prepaymentCharges}" class="form-input"
+                                   placeholder="e.g. Nil for floating rate individual borrowers"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Eligibility -->
+                <div class="border-t border-slate-100 pt-6">
+                    <h3 class="font-display font-bold mb-4">Eligibility limits</h3>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label class="form-label">Max tenure (years)</label>
+                            <input type="number" step="1" min="1" max="40" name="maxTenureYears" th:value="${product.maxTenureYears}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Max age at maturity</label>
+                            <input type="number" step="1" min="18" max="90" name="maxAgeAtMaturity" th:value="${product.maxAgeAtMaturity}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Max LTV (%)</label>
+                            <input type="number" step="0.01" min="0" max="100" name="maxLtvPercent" th:value="${product.maxLtvPercent}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Max FOIR (%)</label>
+                            <input type="number" step="0.01" min="0" max="100" name="maxFoirPercent" th:value="${product.maxFoirPercent}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Min monthly income (₹)</label>
+                            <input type="number" step="1" min="0" name="minMonthlyIncome" th:value="${product.minMonthlyIncome}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Min loan amount (₹)</label>
+                            <input type="number" step="1" min="0" name="minLoanAmount" th:value="${product.minLoanAmount}" class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Max loan amount (₹)</label>
+                            <input type="number" step="1" min="0" name="maxLoanAmount" th:value="${product.maxLoanAmount}" class="form-input"/>
+                        </div>
+                    </div>
+
+                    <p class="form-label mt-5">Who can apply</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="salariedAllowed" value="true" th:checked="${product.salariedAllowed}" class="rounded"/>
+                            <input type="hidden" name="_salariedAllowed" value="on"/> Salaried
+                        </label>
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="selfEmployedAllowed" value="true" th:checked="${product.selfEmployedAllowed}" class="rounded"/>
+                            <input type="hidden" name="_selfEmployedAllowed" value="on"/> Self-employed
+                        </label>
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="pensionerAllowed" value="true" th:checked="${product.pensionerAllowed}" class="rounded"/>
+                            <input type="hidden" name="_pensionerAllowed" value="on"/> Pensioner
+                        </label>
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="nriAllowed" value="true" th:checked="${product.nriAllowed}" class="rounded"/>
+                            <input type="hidden" name="_nriAllowed" value="on"/> NRI
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Selling -->
+                <div class="border-t border-slate-100 pt-6">
+                    <h3 class="font-display font-bold mb-4">Selling points &amp; payout</h3>
+                    <div class="grid sm:grid-cols-2 gap-5">
+                        <div class="sm:col-span-2">
+                            <label class="form-label">Key benefits <span class="text-slate-400 font-normal">(one per line)</span></label>
+                            <textarea name="keyBenefits" rows="4" class="form-textarea" th:text="${product.keyBenefits}"
+                                      placeholder="No prepayment charges&#10;Doorstep service&#10;Top-up after 12 EMIs"></textarea>
+                            <p class="text-[11px] text-slate-400 mt-1">Shown on the proposal the customer receives.</p>
+                        </div>
+                        <div th:if="${canSeeMoney}">
+                            <label class="form-label">Our payout (%)</label>
+                            <input type="number" step="0.01" min="0" name="payoutPercent" th:value="${product.payoutPercent}" class="form-input"
+                                   placeholder="Blank = lender default"/>
+                            <p class="text-[11px] text-slate-400 mt-1">Never used to rank schemes for the customer.</p>
+                        </div>
+                        <input th:unless="${canSeeMoney}" type="hidden" name="payoutPercent" th:value="${product.payoutPercent}"/>
+                        <div class="flex items-end">
+                            <label class="inline-flex items-center gap-2 text-sm font-medium pb-2.5">
+                                <input type="checkbox" name="active" value="true" th:checked="${product.active}" class="rounded"/>
+                                <input type="hidden" name="_active" value="on"/>
+                                Active - show on the rate card and in the advisor
+                            </label>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="form-label">Internal notes</label>
+                            <textarea name="notes" rows="2" class="form-textarea" th:text="${product.notes}"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save scheme</button>
+                    <a th:if="${lender != null}" th:href="@{'/lenders/' + ${enc.encode(lender.id)}}" class="btn btn-outline">Cancel</a>
+                    <a th:if="${lender == null}" th:href="@{/lenders}" class="btn btn-outline">Cancel</a>
+                </div>
+            </form>
+
+            <div class="space-y-6">
+                <div class="card p-5">
+                    <h3 class="font-display font-bold mb-3"><i class="bi bi-lightbulb text-amber-500"></i> How these numbers are used</h3>
+                    <div class="space-y-3 text-sm text-slate-600">
+                        <p><b>CIBIL banding.</b> A customer at or above the <i>best-rate CIBIL</i> is quoted <i>rate from</i>. At the
+                            <i>minimum CIBIL</i> they get <i>rate to</i>, and in between the advisor interpolates. Below the minimum the
+                            scheme is shown as not eligible.</p>
+                        <p><b>FOIR</b> (fixed obligations to income) is the share of monthly income that all EMIs, old and new, may take.
+                            It sets the largest EMI, and so the largest loan, the lender will allow.</p>
+                        <p><b>LTV</b> (loan to value) caps the loan as a percentage of the property value. RBI limits still apply on top.</p>
+                        <p>The eligible loan is the lowest of the FOIR limit, the LTV limit and the maximum loan amount.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

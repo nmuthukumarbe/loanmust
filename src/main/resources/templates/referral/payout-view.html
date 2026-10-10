@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="'Payout ' + ${payout.code}">Referral payout</title></head>
+<body>
+<div layout:fragment="page-title" th:text="'Payout ' + ${payout.code}">Referral payout</div>
+
+<div layout:fragment="content">
+<div th:with="st=(${payout.status != null} ? ${payout.status.name()} : 'PENDING'),
+              flat=${payout.payoutBasis != null and payout.payoutBasis.name() == 'FLAT_PER_FILE'}">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Referral Payouts', parentUrl='/referral-payouts', current=${payout.code})}"></div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <!-- Left column -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="font-display font-bold text-xl" th:text="${payout.code}">RP-0001</h2>
+                            <span class="badge" th:classappend="'badge-' + ${payout.statusTone}" th:text="${payout.statusLabel}">Pending</span>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-1">
+                            Referral payout to <b th:text="${payout.partnerName}">Partner</b>
+                            <span th:if="${payout.partnerMobile}" th:text="' · ' + ${payout.partnerMobile}"></span>
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:if="${payout.applicationId != null}" th:href="@{'/applications/' + ${enc.encode(payout.applicationId)}}" class="btn btn-outline">
+                            <i class="bi bi-folder2-open"></i> Open loan file</a>
+                        <a th:if="${partner != null}" th:href="@{'/referrals/' + ${enc.encode(partner.id)}}" class="btn btn-outline">
+                            <i class="bi bi-person"></i> Partner</a>
+                    </div>
+                </div>
+
+                <dl class="grid sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Loan file</dt>
+                        <dd class="font-medium" th:text="${payout.applicationCode} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Customer</dt>
+                        <dd class="font-medium" th:text="${payout.customerName} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Lender</dt>
+                        <dd class="font-medium" th:text="${payout.lenderName} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Raised on</dt>
+                        <dd class="font-medium" th:text="${payout.createdAt != null} ? ${#temporals.format(payout.createdAt,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Approved</dt>
+                        <dd class="font-medium">
+                            <span th:if="${payout.approvedAt}" th:text="${#temporals.format(payout.approvedAt,'dd MMM yyyy')}">date</span>
+                            <span th:if="${payout.approvedByName}" class="text-slate-500" th:text="' by ' + ${payout.approvedByName}"></span>
+                            <span th:unless="${payout.approvedAt}">—</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Remarks</dt>
+                        <dd class="font-medium" th:text="${payout.remarks} ?: '—'">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Amounts -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">How the amount is worked out</h3>
+                <p class="text-xs text-slate-400 mb-5">The partner's rule is copied onto the payout when it is raised, so later changes to the partner do not alter it.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 items-stretch text-center">
+                    <div class="rounded-xl border border-slate-200 p-3">
+                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Disbursed</p>
+                        <p class="font-display font-bold text-lg mt-1" th:text="'₹' + ${fmt.inr(payout.disbursedAmount)}">₹0</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-3">
+                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">× Rule</p>
+                        <p class="font-display font-bold text-lg mt-1"
+                           th:text="${flat} ? ('₹' + ${fmt.inr(payout.payoutValue)} + ' flat') : ${fmt.pct(payout.payoutValue)}">0.5%</p>
+                        <p class="text-[11px] text-slate-400" th:if="${payout.payoutBasis}" th:text="${payout.payoutBasis.label}">basis</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-3">
+                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">= Gross</p>
+                        <p class="font-display font-bold text-lg mt-1" th:text="'₹' + ${fmt.inr(payout.grossAmount)}">₹0</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-3">
+                        <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">− TDS <span th:if="${payout.tdsPercent}" th:text="'(' + ${fmt.pct(payout.tdsPercent)} + ')'"></span></p>
+                        <p class="font-display font-bold text-lg mt-1 text-slate-600" th:text="'₹' + ${fmt.inr(payout.tdsAmount)}">₹0</p>
+                    </div>
+                </div>
+                <div class="mt-4 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 flex items-center justify-between">
+                    <span class="text-sm font-semibold text-brand-800">Net payable to partner</span>
+                    <span class="font-display font-extrabold text-2xl text-brand-700" th:text="'₹' + ${fmt.inr(payout.netAmount)}">₹0</span>
+                </div>
+            </div>
+
+            <!-- Workflow -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-4">Workflow</h3>
+
+                <!-- Pending / on hold -->
+                <div th:if="${st == 'PENDING' or st == 'ON_HOLD'}">
+                    <p class="text-sm text-slate-600 mb-4" th:if="${st == 'PENDING'}">Waiting for the owner or a manager to approve. Once approved, finance can pay it.</p>
+                    <p class="text-sm text-slate-600 mb-4" th:if="${st == 'ON_HOLD'}">This payout is on hold. Approve it to release it to finance.</p>
+                    <form th:if="${canApprove}" th:action="@{'/referral-payouts/' + ${enc.encode(payout.id)} + '/approve'}" method="post"
+                          data-confirm="Approve this payout for payment?">
+                        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Approve payout</button>
+                    </form>
+                    <p th:unless="${canApprove}" class="text-xs text-slate-400"><i class="bi bi-lock"></i> Only the owner or a manager can approve.</p>
+                </div>
+
+                <!-- Approved: pay -->
+                <div th:if="${st == 'APPROVED'}">
+                    <div th:if="${partner != null and !partner.payable}" class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+                        <i class="bi bi-exclamation-triangle"></i> The partner has no UPI ID or bank account on file. Add one on the partner before paying.
+                    </div>
+                    <p class="text-sm text-slate-600 mb-4">Approved. Pay the partner, then record the transfer here.</p>
+                    <form th:action="@{'/referral-payouts/' + ${enc.encode(payout.id)} + '/pay'}" method="post" class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Paid on</label>
+                            <input type="date" name="paidOn" th:value="${today}" required class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Payment mode</label>
+                            <select name="paymentMode" class="form-select">
+                                <option th:each="m : ${paymentModes}" th:value="${m.name()}" th:text="${m.label}">UPI</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Payment reference</label>
+                            <input type="text" name="paymentReference" class="form-input" placeholder="UTR / UPI txn id"/>
+                        </div>
+                        <div>
+                            <label class="form-label">Remarks <span class="text-slate-400 font-normal">(optional)</span></label>
+                            <input type="text" name="remarks" class="form-input"/>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-currency-rupee"></i> Mark paid</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Paid -->
+                <div th:if="${st == 'PAID'}">
+                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 mb-4 flex items-start gap-3">
+                        <i class="bi bi-check-circle-fill text-emerald-500 mt-0.5"></i>
+                        <div>
+                            <p class="font-semibold">Paid
+                                <span th:if="${payout.paidOn}" th:text="'on ' + ${#temporals.format(payout.paidOn,'dd MMM yyyy')}"></span></p>
+                            <p>
+                                <span th:if="${payout.paymentMode}" th:text="${payout.paymentMode.label}">UPI</span>
+                                <span th:if="${payout.paymentReference}" th:text="' · Ref ' + ${payout.paymentReference}"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <a th:if="${thankYouLink}" th:href="${thankYouLink}" target="_blank" rel="noopener" class="btn btn-success">
+                        <i class="bi bi-whatsapp"></i> Send thank-you on WhatsApp</a>
+                </div>
+
+                <!-- Cancelled -->
+                <p th:if="${st == 'CANCELLED'}" class="text-sm text-slate-500"><i class="bi bi-x-circle text-rose-500"></i> This payout was cancelled and will not be paid.</p>
+
+                <!-- Hold / cancel -->
+                <form th:if="${canApprove and st != 'PAID' and st != 'CANCELLED'}"
+                      th:action="@{'/referral-payouts/' + ${enc.encode(payout.id)} + '/status'}" method="post"
+                      class="mt-6 pt-5 border-t border-slate-100 grid sm:grid-cols-3 gap-3 items-end"
+                      data-confirm="Change the status of this payout?">
+                    <div>
+                        <label class="form-label">Hold or cancel</label>
+                        <select name="status" class="form-select">
+                            <option value="ON_HOLD" th:if="${st != 'ON_HOLD'}">Put on hold</option>
+                            <option value="CANCELLED">Cancel payout</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Reason</label>
+                        <input type="text" name="remarks" class="form-input" placeholder="Why?"/>
+                    </div>
+                    <button type="submit" class="btn btn-outline"><i class="bi bi-pause-circle"></i> Update</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Pay to</h3>
+                <p th:if="${partner == null}" class="text-sm text-slate-400">The partner record is no longer available.</p>
+                <th:block th:if="${partner != null}">
+                    <p class="font-semibold" th:text="${partner.name}">Partner</p>
+                    <p class="text-xs text-slate-400 mb-4" th:text="${partner.code} + ' · ' + ${partner.mobile}">RF-0001</p>
+                    <dl class="space-y-3 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">UPI ID</dt>
+                            <dd class="font-medium text-right break-all">
+                                <span th:text="${partner.upiId} ?: '—'">—</span>
+                                <button th:if="${partner.upiId}" type="button" data-copy-btn th:attr="data-copy=${partner.upiId}"
+                                        class="ml-1 text-slate-400 hover:text-brand-600" title="Copy UPI ID"><i class="bi bi-clipboard"></i></button>
+                            </dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Account holder</dt><dd class="font-medium text-right" th:text="${partner.bankAccountName} ?: '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Account</dt><dd class="font-medium text-right" th:text="${partner.maskedAccount} ?: '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">IFSC</dt><dd class="font-medium text-right" th:text="${partner.ifsc} ?: '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Bank</dt><dd class="font-medium text-right" th:text="${partner.bankName} ?: '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">PAN</dt><dd class="font-medium text-right" th:text="${partner.pan} ?: '—'">—</dd></div>
+                    </dl>
+                    <div th:unless="${partner.payable}" class="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800">
+                        <i class="bi bi-exclamation-triangle"></i> No payment details on file.
+                    </div>
+                </th:block>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${partner.id == null} ? 'Add referral partner' : 'Edit referral partner'">Referral partner</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${partner.id == null} ? 'Add referral partner' : 'Edit referral partner'">Referral partner</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Referral Partners', parentUrl='/referrals', current=${partner.id == null} ? 'New partner' : ${partner.name})}"></div>
+
+        <form th:action="@{/referrals/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${partner.id}"/>
+
+            <div>
+                <h3 class="font-display font-bold mb-4">Who is the partner</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Full name</label>
+                        <input type="text" name="name" th:value="${partner.name}" required class="form-input" placeholder="e.g. Suresh Patil"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='mobile', value=${partner.mobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" th:value="${partner.email}" class="form-input" placeholder="name@example.com"/>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${partner.city}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Partner type</label>
+                        <select name="partnerType" class="form-select">
+                            <option th:each="t : ${partnerTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                    th:selected="${partner.partnerType != null and partner.partnerType.name() == t.name()}">Type</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Payout terms</h3>
+                <p class="text-xs text-slate-400 mb-4">Applied automatically when a loan this partner referred is disbursed. TDS is deducted at the agency rate.</p>
+                <div th:if="${canSetPayout}" class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Payout basis</label>
+                        <select name="payoutBasis" class="form-select">
+                            <option th:each="b : ${payoutBases}" th:value="${b.name()}" th:text="${b.label}"
+                                    th:selected="${partner.payoutBasis != null and partner.payoutBasis.name() == b.name()}">Basis</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Payout value</label>
+                        <input type="number" step="0.01" min="0" name="payoutValue" th:value="${partner.payoutValue}" class="form-input" placeholder="0.00"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Enter a percent (e.g. 0.25) for "% of disbursed amount", or rupees (e.g. 5000) for a flat amount per file. Leave blank to use the agency default.</p>
+                    </div>
+                </div>
+                <div th:unless="${canSetPayout}" class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600 flex items-start gap-3">
+                    <i class="bi bi-lock text-slate-400 mt-0.5"></i>
+                    <div>
+                        <p>Payout terms are set by finance/owner.</p>
+                        <p class="text-xs text-slate-400 mt-0.5" th:if="${partner.id != null}">Current rule: <span th:text="${partner.payoutRule}">rule</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Where to send the money</h3>
+                <p class="text-xs text-slate-400 mb-4">A UPI ID or a bank account is needed before a payout can be paid.</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">UPI ID</label>
+                        <input type="text" name="upiId" th:value="${partner.upiId}" class="form-input" placeholder="name@okbank"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Account holder name</label>
+                        <input type="text" name="bankAccountName" th:value="${partner.bankAccountName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Account number</label>
+                        <input type="text" name="bankAccountNumber" th:value="${partner.bankAccountNumber}" class="form-input" inputmode="numeric" autocomplete="off"/>
+                    </div>
+                    <div>
+                        <label class="form-label">IFSC</label>
+                        <input type="text" name="ifsc" th:value="${partner.ifsc}" class="form-input uppercase" maxlength="11" placeholder="SBIN0001234"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Bank name</label>
+                        <input type="text" name="bankName" th:value="${partner.bankName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">PAN</label>
+                        <input type="text" name="pan" th:value="${partner.pan}" class="form-input uppercase" maxlength="10" placeholder="ABCDE1234F"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Needed for TDS.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium">
+                            <input type="checkbox" name="active" value="true" th:checked="${partner.active}" class="h-4 w-4 rounded border-slate-300"/>
+                            <input type="hidden" name="_active" value="on"/>
+                            Active — their referral link accepts enquiries
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Internal notes</label>
+                        <textarea name="notes" rows="2" class="form-textarea" th:text="${partner.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save partner</button>
+                <a th:href="${partner.id == null} ? @{/referrals} : @{'/referrals/' + ${enc.encode(partner.id)}}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

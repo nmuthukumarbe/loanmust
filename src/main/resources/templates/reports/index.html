@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Reports</title></head>
+<body>
+<div layout:fragment="page-title">Reports</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Reports</h2>
+            <p class="text-sm text-slate-500">Registers for the office and the bank. Every report opens on screen and exports to Excel.</p>
+        </div>
+    </div>
+
+    <th:block th:if="${reports.isEmpty()}"><div class="card p-5"><div th:replace="~{fragments/ui :: empty(icon='bi-graph-up-arrow', title='No reports available', hint='Your role does not include any reports.')}"></div></div></th:block>
+
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <a th:each="r : ${reports}" th:href="@{'/reports/' + ${r.key}}"
+           class="card p-5 flex gap-4 items-start hover:shadow-lg hover:-translate-y-0.5 transition">
+            <div class="h-11 w-11 shrink-0 rounded-xl bg-brand-50 text-brand-600 grid place-items-center text-lg" th:switch="${r.key}">
+                <i th:case="'leads'" class="bi bi-funnel"></i>
+                <i th:case="'lead-sources'" class="bi bi-diagram-3"></i>
+                <i th:case="'pipeline'" class="bi bi-kanban"></i>
+                <i th:case="'disbursements'" class="bi bi-bank"></i>
+                <i th:case="'lender-business'" class="bi bi-building-columns"></i>
+                <i th:case="'builder-business'" class="bi bi-buildings"></i>
+                <i th:case="'bank-payouts'" class="bi bi-percent"></i>
+                <i th:case="'referral-payouts'" class="bi bi-send-check"></i>
+                <i th:case="'fee-receipts'" class="bi bi-receipt"></i>
+                <i th:case="'modd'" class="bi bi-file-earmark-lock"></i>
+                <i th:case="'staff-productivity'" class="bi bi-person-workspace"></i>
+                <i th:case="*" class="bi bi-table"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-display font-bold" th:text="${r.title}">Report</p>
+                    <span th:if="${r.money}" class="badge badge-emerald"><i class="bi bi-currency-rupee"></i> Money</span>
+                </div>
+                <p class="text-sm text-slate-500 mt-1" th:text="${r.description}">Description</p>
+                <p class="text-xs text-slate-400 mt-2">
+                    <i class="bi" th:classappend="${r.dated} ? 'bi-calendar-range' : 'bi-clock'"></i>
+                    <span th:text="${r.dated} ? 'Pick a date range' : 'Current position'">Current position</span>
+                </p>
+            </div>
+            <i class="bi bi-chevron-right text-slate-300 mt-1"></i>
+        </a>
+    </div>
+</div>
+</body>
+</html>

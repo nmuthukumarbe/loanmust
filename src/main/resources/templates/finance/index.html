@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Finance &amp; Fees</title></head>
+<body>
+<div layout:fragment="page-title">Finance &amp; Fees</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Finance</h2>
+            <p class="text-sm text-slate-500">
+                The money picture for
+                <span class="font-medium text-slate-700" th:text="${#temporals.format(summary.from(),'dd MMM yyyy')} + ' – ' + ${#temporals.format(summary.to(),'dd MMM yyyy')}">period</span>.
+            </p>
+        </div>
+        <form th:action="@{/finance}" method="get" class="flex flex-wrap items-end gap-2">
+            <div>
+                <label class="form-label">From</label>
+                <input type="date" name="from" th:value="${from}" class="form-input"/>
+            </div>
+            <div>
+                <label class="form-label">To</label>
+                <input type="date" name="to" th:value="${to}" class="form-input"/>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            <a th:href="@{/finance}" class="btn btn-ghost">This month</a>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        <div class="stat-card stat-brand">
+            <i class="stat-ico bi bi-bank"></i>
+            <p class="stat-label">Disbursed</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.lakhs(summary.disbursed())}">₹0</p>
+            <p class="text-xs opacity-80 mt-1" th:text="${summary.filesDisbursed()} + ' file(s)'">0 files</p>
+        </div>
+        <div class="stat-card stat-sky">
+            <i class="stat-ico bi bi-percent"></i>
+            <p class="stat-label">Bank payout earned</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(summary.payoutEarned())}">₹0</p>
+        </div>
+        <div class="stat-card stat-emerald">
+            <i class="stat-ico bi bi-box-arrow-in-down"></i>
+            <p class="stat-label">Bank payout received</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(summary.payoutReceived())}">₹0</p>
+        </div>
+        <div class="stat-card stat-teal">
+            <i class="stat-ico bi bi-receipt"></i>
+            <p class="stat-label">Fees collected</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(summary.feesCollected())}">₹0</p>
+        </div>
+        <div class="stat-card stat-rose">
+            <i class="stat-ico bi bi-send-check"></i>
+            <p class="stat-label">Referral paid</p>
+            <p class="stat-value" th:text="'₹' + ${fmt.inr(summary.referralPaid())}">₹0</p>
+        </div>
+        <div class="stat-card stat-violet">
+            <i class="stat-ico bi bi-graph-up-arrow"></i>
+            <p class="stat-label">Net income</p>
+            <p class="stat-value" th:text="(${summary.netIncome().signum() < 0} ? '−₹' : '₹') + ${fmt.inr(summary.netIncome().abs())}">₹0</p>
+            <p class="text-xs opacity-80 mt-1">Received + fees − referral paid</p>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <div class="card p-5 lg:col-span-2">
+            <h3 class="font-display font-bold mb-1">Bank payout — last 6 months</h3>
+            <p class="text-xs text-slate-400 mb-4">Earned on disbursements vs. actually received from lenders.</p>
+            <canvas id="trendChart" height="120"></canvas>
+        </div>
+        <div class="space-y-4">
+            <h3 class="font-display font-bold">What's open</h3>
+            <a th:href="@{/commission(status='UNPAID')}" class="card p-5 block hover:shadow-lg transition">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 grid place-items-center"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Bank payout outstanding</p>
+                        <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(summary.payoutOutstanding())}">₹0</p>
+                    </div>
+                    <i class="bi bi-chevron-right ml-auto text-slate-300"></i>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">Owed to you by lenders, across all periods.</p>
+            </a>
+            <a th:href="@{/referral-payouts}" class="card p-5 block hover:shadow-lg transition">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 grid place-items-center"><i class="bi bi-people"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Referral owed</p>
+                        <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(summary.referralOwed())}">₹0</p>
+                    </div>
+                    <i class="bi bi-chevron-right ml-auto text-slate-300"></i>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">Pending, approved and on-hold payouts to partners.</p>
+            </a>
+            <div class="card p-5">
+                <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-3">Quick links</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <a th:href="@{/commission}" class="btn btn-outline btn-sm"><i class="bi bi-percent"></i> Bank payouts</a>
+                    <a th:href="@{/referral-payouts}" class="btn btn-outline btn-sm"><i class="bi bi-send-check"></i> Referral payouts</a>
+                    <a th:href="@{/finance/receipts}" class="btn btn-outline btn-sm"><i class="bi bi-receipt"></i> Fee receipts</a>
+                    <a th:href="@{/finance/receipts/new}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Record fee</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-5 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-bold">Recent fee receipts</h3>
+            <a th:href="@{/finance/receipts}" class="text-sm text-brand-600 hover:underline">All receipts <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <th:block th:if="${recentReceipts.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-receipt', title='No fee receipts yet', hint='Record login, MODD or legal fees you collect from customers.')}"></div></th:block>
+        <div th:unless="${recentReceipts.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head"><tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Towards</th><th>Mode</th><th class="text-right">Amount</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${recentReceipts}" class="table-row cursor-pointer" th:data-href="@{'/finance/receipts/' + ${enc.encode(r.id)}}">
+                    <td class="font-semibold whitespace-nowrap" th:text="${r.receiptNo}">FR-0001</td>
+                    <td class="whitespace-nowrap text-sm" th:text="${r.receivedOn != null} ? ${#temporals.format(r.receivedOn,'dd MMM yyyy')} : '—'">date</td>
+                    <td><p class="font-medium" th:text="${r.customerName}">Customer</p>
+                        <p class="text-xs text-slate-400" th:if="${r.applicationCode}" th:text="${r.applicationCode}">LF-0001</p></td>
+                    <td class="text-sm text-slate-600" th:text="${r.feeTypeLabel}">Login fee</td>
+                    <td class="text-xs text-slate-500" th:text="${r.paymentMode != null} ? ${r.paymentMode.label} : '—'">UPI</td>
+                    <td class="text-right font-semibold whitespace-nowrap" th:text="'₹' + ${fmt.inr(r.amount)}">₹0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        (function () {
+            var labels = /*[[${trendLabels}]]*/ [];
+            var earned = /*[[${trendEarned}]]*/ [];
+            var received = /*[[${trendReceived}]]*/ [];
+            var ctx = document.getElementById('trendChart');
+            var css = getComputedStyle(document.documentElement);
+            var brand600 = css.getPropertyValue('--brand-600').trim() || '#4f46e5';
+            var brand300 = css.getPropertyValue('--brand-300').trim() || '#a5b4fc';
+            if (ctx && window.Chart) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Earned', data: earned, backgroundColor: brand300, borderRadius: 6, maxBarThickness: 34 },
+                            { label: 'Received', data: received, backgroundColor: brand600, borderRadius: 6, maxBarThickness: 34 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: { callbacks: { label: function (c) {
+                                return c.dataset.label + ': ₹' + Number(c.parsed.y || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                            } } }
+                        },
+                        scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '₹' + Number(v).toLocaleString('en-IN'); } } } }
+                    }
+                });
+            }
+        })();
+    </script>
+</th:block>
+</body>
+</html>

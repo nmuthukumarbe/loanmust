@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${employee.id == null} ? 'Add employee' : 'Edit employee'">Employee</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${employee.id == null} ? 'Add employee' : 'Edit employee'">Employee</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Employees', parentUrl='/employees', current=${employee.id == null} ? 'New employee' : ${employee.name})}"></div>
+
+        <form th:action="@{/employees/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${employee.id}"/>
+
+            <div>
+                <h3 class="font-display font-bold mb-4">Personal details</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Full name</label>
+                        <input type="text" name="name" th:value="${employee.name}" required class="form-input" placeholder="e.g. Priya Sharma"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='mobile', value=${employee.mobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" th:value="${employee.email}" class="form-input" placeholder="name@example.com"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Date of birth</label>
+                        <input type="date" name="dateOfBirth" th:value="${employee.dateOfBirth}" class="form-input"/>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" rows="2" class="form-textarea" th:text="${employee.address}"></textarea>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Emergency contact</label>
+                        <input type="text" name="emergencyContact" th:value="${employee.emergencyContact}" class="form-input" placeholder="Name, relation and phone"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Role in the office</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Designation</label>
+                        <input type="text" name="designation" th:value="${employee.designation}" class="form-input" placeholder="e.g. Data entry operator"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Department</label>
+                        <select name="department" class="form-select">
+                            <option value="">Not set</option>
+                            <option th:each="d : ${departments}" th:value="${d}" th:text="${d}"
+                                    th:selected="${employee.department == d}">Department</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Joining date</label>
+                        <input type="date" name="joiningDate" th:value="${employee.joiningDate}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Monthly salary (₹)</label>
+                        <input type="number" step="0.01" min="0" name="monthlySalary" th:value="${employee.monthlySalary}" class="form-input" placeholder="0.00"/>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Linked sign-in</label>
+                        <select name="userId" class="form-select">
+                            <option value="">No sign-in</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' — ' + ${u.email}"
+                                    th:selected="${employee.userId != null and employee.userId == u.id}">User</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">Link the employee to their Loanmust login so their data-entry output shows in the staff productivity report.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium">
+                            <input type="checkbox" name="active" value="true" th:checked="${employee.active}" class="h-4 w-4 rounded border-slate-300"/>
+                            <input type="hidden" name="_active" value="on"/>
+                            Active — appears on the daily attendance sheet
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" rows="2" class="form-textarea" th:text="${employee.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save employee</button>
+                <a th:href="@{/employees}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

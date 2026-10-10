@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>MODD registrations</title></head>
+<body>
+<div layout:fragment="page-title">MODD registrations</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">MODD registrations</h2>
+            <p class="text-sm text-slate-500">Mortgage deposit jobs for secured loans, from originals collected to deposit with the bank.</p>
+        </div>
+    </div>
+
+    <div class="mb-5 rounded-xl bg-brand-50 border border-brand-100 px-4 py-3 text-sm text-brand-800 flex items-start gap-3">
+        <i class="bi bi-info-circle-fill text-brand-600 mt-0.5"></i>
+        <div>
+            <b>What is MODD?</b> The Memorandum of Deposit of Title Deeds creates the equitable mortgage for a home loan or LAP.
+            It is registered at the sub-registrar office (stamp duty and registration fee apply), and the customer's original
+            title documents are then deposited with the bank. Most lenders need it before or alongside disbursement.
+            A job is started from the loan file's <b>Start MODD</b> button.
+        </div>
+    </div>
+
+    <!-- Appointments this week -->
+    <div class="card p-5 mb-5">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-display font-bold"><i class="bi bi-calendar-week text-brand-600"></i> Appointments this week</h3>
+            <span class="badge badge-slate" th:text="${appointments.size()}">0</span>
+        </div>
+        <p th:if="${appointments.isEmpty()}" class="text-sm text-slate-400">No sub-registrar appointments booked for the next 7 days.</p>
+        <div th:unless="${appointments.isEmpty()}" class="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+            <a th:each="m : ${appointments}" th:href="@{'/modd/' + ${enc.encode(m.id)}}"
+               class="board-card block shrink-0 w-64">
+                <p class="text-xs font-semibold text-brand-700" th:if="${m.appointmentAt}"
+                   th:text="${#temporals.format(m.appointmentAt,'EEE dd MMM · hh:mm a')}">Mon 01 Oct · 11:00 AM</p>
+                <p class="font-semibold text-sm truncate mt-1" th:text="${m.customerName}">Customer</p>
+                <p class="text-xs text-slate-500 truncate" th:text="${m.subRegistrarOffice} ?: 'Sub-registrar not set'">SRO</p>
+                <p class="text-[11px] text-slate-400 mt-1 truncate">
+                    <span th:text="${m.code}">MD-0001</span>
+                    <span th:if="${m.lenderName}" th:text="' · ' + ${m.lenderName}"></span>
+                </p>
+            </a>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/modd}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[16rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search MODD code, file code, customer or registration no.…" class="form-input w-full pl-9"/>
+            </div>
+            <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">Any status</option>
+                <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                        th:selected="${status != null and status.name() == s.name()}">Status</option>
+            </select>
+            <a th:href="@{/modd}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${moddPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-file-earmark-lock', title='No MODD jobs yet', hint='Open a secured loan file and press Start MODD.')}"></div></th:block>
+
+        <div th:unless="${moddPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>MODD</th><th>Loan file</th><th>Lender</th><th>Sub-registrar</th>
+                    <th>Appointment</th><th>Status</th><th>Progress</th><th>Registration no.</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${moddPage.content}" class="table-row cursor-pointer" th:data-href="@{'/modd/' + ${enc.encode(m.id)}}">
+                    <td class="font-semibold whitespace-nowrap" th:text="${m.code}">MD-0001</td>
+                    <td>
+                        <p class="font-medium" th:text="${m.customerName}">Customer</p>
+                        <p class="text-xs text-slate-400" th:text="${m.applicationCode}">LA-0001</p>
+                    </td>
+                    <td class="text-sm text-slate-600" th:text="${m.lenderName} ?: '—'">Lender</td>
+                    <td class="text-sm text-slate-600" th:text="${m.subRegistrarOffice} ?: '—'">SRO</td>
+                    <td class="whitespace-nowrap text-sm">
+                        <span th:if="${m.appointmentAt}" th:text="${#temporals.format(m.appointmentAt,'dd MMM yyyy, hh:mm a')}">date</span>
+                        <span th:unless="${m.appointmentAt}" class="text-slate-300">—</span>
+                    </td>
+                    <td><span class="badge" th:classappend="'badge-' + ${m.statusTone}" th:text="${m.statusLabel}">Status</span></td>
+                    <td class="w-28"><span class="meter"><span th:style="'width:' + ${m.progressPercent} + '%'"></span></span></td>
+                    <td class="text-sm" th:text="${m.registrationNumber} ?: '—'">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${moddPage}, base='/modd')}"></div>
+    </div>
+</div>
+</body>
+</html>

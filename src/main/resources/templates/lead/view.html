@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${lead.name}">Lead</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${lead.name}">Lead</div>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Leads', parentUrl='/leads', current=${lead.name})}"></div>
+
+    <div th:if="${duplicateOf != null}" class="mb-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-start gap-3">
+        <i class="bi bi-exclamation-triangle-fill text-amber-500 mt-0.5"></i>
+        <div>
+            <b>Possible duplicate.</b> An open lead with the same mobile number already exists:
+            <a th:href="@{'/leads/' + ${enc.encode(duplicateOf.id)}}" class="underline font-semibold"
+               th:text="${duplicateOf.code} + ' — ' + ${duplicateOf.name}">LD-0001</a>.
+            Work one of them and archive the other so the follow-ups stay in one place.
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <!-- Left column -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header card -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="h-14 w-14 shrink-0 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center text-lg font-display font-bold"
+                             th:text="${lead.initials}">LD</div>
+                        <div class="min-w-0">
+                            <h2 class="font-display font-bold text-xl" th:text="${lead.name}">Name</h2>
+                            <p class="text-sm text-slate-500">
+                                <span th:text="${lead.code}">LD-0001</span>
+                                <span th:text="' · ' + ${lead.channelLine}">Direct client</span>
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="badge" th:classappend="'badge-' + ${lead.statusTone}" th:text="${lead.statusLabel}">Status</span>
+                                <span class="badge" th:classappend="'badge-' + ${lead.priorityTone}" th:text="${lead.priorityLabel}">Priority</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:if="${perms == null or perms.canEdit('leads')}" th:href="@{'/leads/' + ${enc.encode(lead.id)} + '/edit'}" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+                        <a th:if="${whatsappLink}" th:href="${whatsappLink}" target="_blank" rel="noopener" class="btn btn-success"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                        <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor(leadId=${enc.encode(lead.id)})}" class="btn btn-outline">
+                            <i class="bi bi-bank"></i> Compare banks</a>
+                    </div>
+                </div>
+
+                <!-- Conversion -->
+                <div class="mt-5 flex flex-wrap items-center gap-2">
+                    <th:block th:if="${lead.convertedCustomerId == null}">
+                        <form th:action="@{'/leads/' + ${enc.encode(lead.id)} + '/convert'}" method="post"
+                              data-confirm="Create a customer from this lead?">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus"></i> Convert to customer</button>
+                        </form>
+                    </th:block>
+                    <a th:if="${lead.convertedCustomerId != null}" th:href="@{'/customers/' + ${enc.encode(lead.convertedCustomerId)}}"
+                       class="btn btn-outline"><i class="bi bi-person-check"></i> Open customer</a>
+                    <a th:if="${lead.convertedApplicationId != null}" th:href="@{'/applications/' + ${enc.encode(lead.convertedApplicationId)}}"
+                       class="btn btn-success"><i class="bi bi-folder2-open"></i> Open loan file</a>
+                    <form th:if="${lead.convertedApplicationId == null}" th:action="@{'/leads/' + ${enc.encode(lead.id)} + '/convert'}" method="post">
+                        <input type="hidden" name="next" value="file"/>
+                        <button type="submit" class="btn btn-outline"><i class="bi bi-folder-plus"></i> Open loan file</button>
+                    </form>
+                    <span class="text-xs text-slate-400">Opening a loan file creates the customer first (if needed) and carries the channel across.</span>
+                </div>
+
+                <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Mobile</dt><dd class="font-medium" th:text="${lead.mobile}">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Email</dt><dd class="font-medium break-all" th:text="${lead.email} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">City</dt><dd class="font-medium" th:text="${lead.city} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Loan type</dt><dd class="font-medium" th:text="${lead.loanTypeLabel}">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Amount required</dt>
+                        <dd class="font-medium" th:text="${lead.loanAmountRequired != null} ? '₹' + ${fmt.inr(lead.loanAmountRequired)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Property value</dt>
+                        <dd class="font-medium" th:text="${lead.propertyValue != null} ? '₹' + ${fmt.inr(lead.propertyValue)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Employment</dt>
+                        <dd class="font-medium" th:text="${lead.employmentType != null} ? ${lead.employmentType.label} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Monthly income</dt>
+                        <dd class="font-medium" th:text="${lead.monthlyIncome != null} ? '₹' + ${fmt.inr(lead.monthlyIncome)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Existing EMIs</dt>
+                        <dd class="font-medium" th:text="${lead.existingEmi != null} ? '₹' + ${fmt.inr(lead.existingEmi)} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">CIBIL</dt>
+                        <dd class="font-medium">
+                            <span th:if="${lead.cibilScore}" class="badge"
+                                  th:classappend="${lead.cibilScore >= 750} ? 'badge-emerald' : (${lead.cibilScore >= 700} ? 'badge-amber' : 'badge-rose')"
+                                  th:text="${lead.cibilScore}">750</span>
+                            <span th:unless="${lead.cibilScore}">Not checked</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Source</dt><dd class="font-medium" th:text="${lead.sourceLabel}">—</dd></div>
+                    <div th:if="${lead.builderName}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Builder / project</dt>
+                        <dd class="font-medium" th:text="${lead.builderName} + (${lead.projectName} != null ? ' · ' + ${lead.projectName} : '')">—</dd></div>
+                    <div th:if="${lead.referralPartnerName}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Referred by</dt>
+                        <dd class="font-medium" th:text="${lead.referralPartnerName}">—</dd></div>
+                    <div th:if="${lead.sourceDetail}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Source detail</dt>
+                        <dd class="font-medium" th:text="${lead.sourceDetail}">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Assigned to</dt><dd class="font-medium" th:text="${lead.assignedUserName} ?: 'Unassigned'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Next follow-up</dt>
+                        <dd class="font-medium" th:classappend="${lead.followUpOverdue} ? 'text-rose-600' : (${lead.followUpToday} ? 'text-amber-600' : '')">
+                            <span th:if="${lead.nextFollowUpDate}" th:text="${#temporals.format(lead.nextFollowUpDate,'dd MMM yyyy')}">date</span>
+                            <span th:unless="${lead.nextFollowUpDate}">Not set</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Last contacted</dt>
+                        <dd class="font-medium">
+                            <span th:if="${lead.lastContactedAt}" th:text="${#temporals.format(lead.lastContactedAt,'dd MMM yyyy, HH:mm')}">date</span>
+                            <span th:unless="${lead.lastContactedAt}">Never</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Follow-ups logged</dt><dd class="font-medium" th:text="${lead.followUpCount} ?: 0">0</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Created</dt>
+                        <dd class="font-medium"><span th:if="${lead.createdAt}" th:text="${#temporals.format(lead.createdAt,'dd MMM yyyy')}">date</span></dd></div>
+                    <div class="col-span-2 sm:col-span-3" th:if="${lead.lostReason}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Closed because</dt>
+                        <dd class="text-rose-600 mt-1" th:text="${lead.lostReason}">—</dd></div>
+                    <div class="col-span-2 sm:col-span-3" th:if="${lead.requirement}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Requirement</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${lead.requirement}">—</dd></div>
+                    <div class="col-span-2 sm:col-span-3" th:if="${lead.notes}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Internal notes</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${lead.notes}">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Log a follow-up -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Log a follow-up</h3>
+                <p class="text-xs text-slate-400 mb-4">A first follow-up moves a new lead to Contacted automatically. The next follow-up date drives the "due today" list.</p>
+                <form th:action="@{'/leads/' + ${enc.encode(lead.id)} + '/follow-up'}" method="post" class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Date</label>
+                        <input type="date" name="activityDate" th:value="${#temporals.format(#temporals.createToday(),'yyyy-MM-dd')}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Channel</label>
+                        <select name="channel" class="form-select">
+                            <option th:each="c : ${channels}" th:value="${c.name()}" th:text="${c.label}">Call</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">What was said</label>
+                        <textarea name="remarks" rows="2" class="form-textarea" required
+                                  placeholder="Keep it specific — this is the record everyone else reads."></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Outcome</label>
+                        <input type="text" name="outcome" class="form-input" list="outcomeOptions" placeholder="Interested / No answer / Call later"/>
+                        <datalist id="outcomeOptions">
+                            <option value="Interested"></option>
+                            <option value="No answer"></option>
+                            <option value="Call later"></option>
+                            <option value="Documents promised"></option>
+                            <option value="Comparing with other banks"></option>
+                            <option value="Not interested"></option>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="form-label">Next follow-up</label>
+                        <input type="date" name="nextFollowUpDate" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Change status <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <select name="newStatus" class="form-select">
+                            <option value="">Leave unchanged</option>
+                            <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}">Status</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="btn btn-primary w-full"><i class="bi bi-journal-plus"></i> Record follow-up</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-4">Activity timeline</h3>
+                <p th:if="${timeline.isEmpty()}" class="text-sm text-slate-400">
+                    No contact recorded yet. The first call you log will appear here.
+                </p>
+                <div th:unless="${timeline.isEmpty()}" class="timeline space-y-5">
+                    <div th:each="a : ${timeline}" class="relative">
+                        <span class="timeline-dot" style="top:.2rem"></span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <i th:class="'bi ' + ${a.channelIcon} + ' text-brand-600'"></i>
+                            <span class="text-sm font-semibold" th:text="${a.channelLabel}">Call</span>
+                            <span class="badge badge-slate" th:if="${a.outcome}" th:text="${a.outcome}">Outcome</span>
+                            <span class="text-xs text-slate-400" th:if="${a.activityDate}" th:text="${#temporals.format(a.activityDate,'dd MMM yyyy')}">date</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1" th:if="${a.remarks}" th:text="${a.remarks}">remarks</p>
+                        <p class="text-xs text-slate-400 mt-1">
+                            <span th:text="${a.userName} ?: 'System'">user</span>
+                            <span th:if="${a.nextFollowUpDate}" th:text="' · next: ' + ${#temporals.format(a.nextFollowUpDate,'dd MMM yyyy')}"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+
+            <!-- Qualification -->
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-1">Lead qualification</h3>
+                <p class="text-xs text-slate-400 mb-4">Scored from CIBIL, income vs EMI, channel and responsiveness; recalculated on every change.</p>
+
+                <div class="flex items-end gap-3">
+                    <p class="text-4xl font-display font-extrabold text-brand-700" th:text="${assessment.score()}">0</p>
+                    <p class="text-sm text-slate-400 mb-1">/ 100</p>
+                    <span class="badge ml-auto mb-1" th:classappend="'badge-' + ${assessment.priority().tone}" th:text="${assessment.priority().label}">Warm</span>
+                </div>
+                <span class="meter mt-3 block"><span th:style="'width:' + ${assessment.score()} + '%'"></span></span>
+
+                <div class="mt-4 rounded-xl bg-brand-50 border border-brand-100 p-3">
+                    <p class="text-[11px] uppercase tracking-wide text-brand-600 font-semibold">Suggested next action</p>
+                    <p class="text-sm text-brand-900 mt-1" th:text="${assessment.suggestedAction()}">action</p>
+                </div>
+
+                <details class="mt-4" th:unless="${assessment.reasons() == null or assessment.reasons().isEmpty()}">
+                    <summary class="text-sm text-slate-500 cursor-pointer hover:text-brand-700">Why this score?</summary>
+                    <ul class="mt-2 space-y-1 text-xs text-slate-500">
+                        <li th:each="r : ${assessment.reasons()}" class="flex gap-2">
+                            <i class="bi bi-dot"></i><span th:text="${r}">reason</span>
+                        </li>
+                    </ul>
+                </details>
+            </div>
+
+            <!-- Ownership -->
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Ownership</h3>
+                <form th:action="@{'/leads/' + ${enc.encode(lead.id)} + '/assign'}" method="post" class="space-y-3">
+                    <div>
+                        <label class="form-label">Assigned to</label>
+                        <select name="userId" class="form-select">
+                            <option value="">Unassigned</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName}"
+                                    th:selected="${lead.assignedUserId != null and lead.assignedUserId == u.id}">User</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-outline w-full"><i class="bi bi-person-check"></i> Update assignment</button>
+                </form>
+            </div>
+
+            <!-- Close -->
+            <div class="card p-5" th:if="${lead.open}">
+                <h3 class="font-display font-bold mb-1">Close lead</h3>
+                <p class="text-xs text-slate-400 mb-4">Record why it did not go ahead - this feeds the lost-reason report.</p>
+                <form th:action="@{'/leads/' + ${enc.encode(lead.id)} + '/close'}" method="post" class="space-y-3"
+                      data-confirm="Close this lead? It drops out of the follow-up lists.">
+                    <div>
+                        <label class="form-label">Close as</label>
+                        <select name="status" class="form-select">
+                            <option value="LOST">Lost</option>
+                            <option value="NOT_ELIGIBLE">Not eligible</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Reason</label>
+                        <input type="text" name="reason" required class="form-input" placeholder="Low CIBIL, chose another DSA, plan dropped…"/>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-full"><i class="bi bi-x-circle"></i> Close lead</button>
+                </form>
+            </div>
+
+            <!-- Proposals -->
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-display font-bold">Proposals</h3>
+                    <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor(leadId=${enc.encode(lead.id)})}" class="text-sm text-brand-600 hover:underline">New</a>
+                </div>
+                <p th:if="${proposals.isEmpty()}" class="text-sm text-slate-400">No bank comparison saved yet. Use <b>Compare banks</b> to prepare one.</p>
+                <div th:unless="${proposals.isEmpty()}" class="space-y-2">
+                    <a th:each="p : ${proposals}" th:href="@{'/advisor/proposals/' + ${enc.encode(p.id)}}"
+                       class="block p-3 rounded-xl border border-slate-100 hover:bg-slate-50">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold" th:text="${p.code}">PR-0001</span>
+                            <span class="text-xs text-slate-400" th:if="${p.createdAt}" th:text="${#temporals.format(p.createdAt,'dd MMM yyyy')}">date</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5" th:if="${p.recommendedLenderName}"
+                           th:text="${p.recommendedLenderName} + ' @ ' + ${fmt.pct(p.recommendedRate)}">Bank @ 8.5%</p>
+                        <p class="text-xs text-slate-400 mt-0.5" th:unless="${p.recommendedLenderName}">No eligible lender</p>
+                    </a>
+                </div>
+            </div>
+
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

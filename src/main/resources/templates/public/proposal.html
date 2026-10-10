@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="noindex, nofollow"/>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
+    <title th:text="'Your loan comparison' + (${agency != null} ? ' · ' + ${agency.displayName} : '')">Your loan comparison</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: {
+            fontFamily: { display: ['"Plus Jakarta Sans"','sans-serif'], sans: ['Inter','sans-serif'] },
+            colors: { canvas:'#F4F6FB', ink:'#0F172A', brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } }
+        } } };
+    </script>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="font-sans bg-canvas text-ink antialiased min-h-screen"
+      th:with="pd=${agency != null and agency.phone != null} ? ${agency.phone.replaceAll('[^0-9]', '')} : null,
+               phoneDigits=${pd != null and pd.length() == 10} ? '91' + ${pd} : ${pd}">
+
+<!-- Agency header -->
+<header class="bg-white border-b border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="h-10 w-10 shrink-0 rounded-xl bg-brand-600 text-white grid place-items-center"><i class="bi bi-bank"></i></div>
+            <div class="min-w-0">
+                <p class="font-display font-bold truncate" th:text="${agency != null} ? ${agency.displayName} : 'Your loan advisor'">Agency</p>
+                <p class="text-xs text-slate-500 truncate">
+                    <span th:if="${agency != null and agency.phone != null}" th:text="${agency.phone}">phone</span>
+                    <span th:if="${agency != null and agency.phone != null and agency.email != null}"> · </span>
+                    <span th:if="${agency != null and agency.email != null}" th:text="${agency.email}">email</span>
+                </p>
+            </div>
+        </div>
+        <a th:if="${phoneDigits != null and !phoneDigits.isEmpty()}" th:href="'tel:+' + ${phoneDigits}" class="btn btn-outline btn-sm shrink-0"><i class="bi bi-telephone"></i> <span class="hidden sm:inline">Call</span></a>
+    </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-4 py-6 pb-28 sm:pb-10 space-y-6">
+
+    <!-- Intro -->
+    <section class="card p-5 sm:p-6">
+        <p class="text-xs uppercase tracking-wider text-brand-600 font-semibold">Loan comparison</p>
+        <h1 class="font-display font-extrabold text-2xl mt-1"
+            th:text="'Prepared for ' + (${proposal.customerName} ?: 'you')">Prepared for you</h1>
+        <p class="text-slate-600 mt-2">
+            <span th:text="${proposal.loanTypeLabel}">Home loan</span> of
+            <b th:text="'₹' + ${fmt.inr(proposal.loanAmount)}">₹0</b>
+            <span th:if="${proposal.tenureYears}" th:text="'over ' + ${proposal.tenureYears} + ' years'">over 20 years</span>
+        </p>
+        <p class="text-xs text-slate-500 mt-3">
+            <i class="bi bi-calendar3"></i>
+            <span th:if="${outcome.generatedAt}" th:text="'Rates as on ' + ${#temporals.format(outcome.generatedAt,'dd MMM yyyy')}">Rates as on</span>
+            <span th:if="${proposal.validUntil}" th:text="' · valid until ' + ${#temporals.format(proposal.validUntil,'dd MMM yyyy')}"></span>
+            <span th:text="' · ref ' + ${proposal.code}">ref</span>
+        </p>
+        <div th:if="${proposal.expired}" class="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+            <i class="bi bi-exclamation-triangle-fill text-amber-500"></i>
+            This comparison has passed its validity date and bank rates may have changed. Please contact us for a fresh comparison.
+        </div>
+        <div th:if="${proposal.remarks}" class="mt-4 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-1">Note from your advisor</p>
+            <p th:text="${proposal.remarks}">remarks</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-5 text-center">
+            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                <p class="font-display font-extrabold text-2xl" th:text="${outcome.evaluatedCount}">0</p>
+                <p class="text-xs text-slate-500">loan schemes compared</p>
+            </div>
+            <div class="rounded-xl bg-emerald-50 px-3 py-3">
+                <p class="font-display font-extrabold text-2xl text-emerald-600" th:text="${outcome.eligibleCount}">0</p>
+                <p class="text-xs text-slate-500">you are eligible for</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recommended -->
+    <section th:if="${outcome.recommended != null}" th:with="r=${outcome.recommended}"
+             class="card p-5 sm:p-6 border-2" style="border-color:#6366f1">
+        <span class="badge badge-brand"><i class="bi bi-star-fill"></i> Our recommendation</span>
+        <div class="flex flex-wrap items-end justify-between gap-3 mt-3">
+            <div class="min-w-0">
+                <h2 class="font-display font-extrabold text-2xl flex items-center gap-2">
+                    <span class="h-3 w-3 rounded-full shrink-0" th:style="'background:' + (${r.lenderColor} ?: '#6366f1')"></span>
+                    <span th:text="${r.lenderName}">Bank</span>
+                </h2>
+                <p class="text-sm text-slate-500" th:text="${r.productName}">Product</p>
+            </div>
+            <div class="text-right">
+                <p class="font-display font-extrabold text-4xl text-brand-700" th:text="${fmt.pct(r.applicableRate)}">8.5%</p>
+                <p class="text-xs text-slate-500">interest rate p.a.</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+            <div class="rounded-xl bg-brand-50 px-3 py-3">
+                <p class="text-xs text-slate-500">Monthly EMI</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.emi)}">₹0</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                <p class="text-xs text-slate-500">Tenure</p>
+                <p class="font-display font-bold text-lg" th:text="${r.tenureYearsRounded} + ' years'">20 years</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                <p class="text-xs text-slate-500">Processing fee</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.processingFee)}">₹0</p>
+                <p class="text-[11px] text-slate-400" th:text="'+ ₹' + ${fmt.inr(r.processingFeeGst)} + ' GST'">GST</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                <p class="text-xs text-slate-500">Total cost</p>
+                <p class="font-display font-bold text-lg" th:text="'₹' + ${fmt.inr(r.totalCost)}">₹0</p>
+                <p class="text-[11px] text-slate-400">interest + fees</p>
+            </div>
+        </div>
+        <div th:unless="${outcome.recommendationReasons == null or outcome.recommendationReasons.isEmpty()}" class="mt-5">
+            <p class="text-sm font-semibold mb-2">Why we recommend it</p>
+            <ul class="space-y-1.5 text-sm text-slate-600">
+                <li th:each="why : ${outcome.recommendationReasons}" class="flex gap-2">
+                    <i class="bi bi-check-circle-fill text-emerald-500 mt-0.5"></i><span th:text="${why}">reason</span>
+                </li>
+            </ul>
+        </div>
+        <ul th:unless="${r.benefits == null or r.benefits.isEmpty()}" class="mt-4 flex flex-wrap gap-2">
+            <li th:each="b : ${r.benefits}" class="badge badge-emerald" th:text="${b}">benefit</li>
+        </ul>
+    </section>
+
+    <section th:if="${outcome.recommended == null}" class="card p-5 sm:p-6">
+        <h2 class="font-display font-bold text-lg">We need a little more to find you a bank</h2>
+        <p class="text-sm text-slate-600 mt-2">On the details shared, none of the banks we compared can approve the full amount yet.
+            Options such as a co-applicant, a longer tenure or a slightly lower amount usually help - talk to us and we will work it out with you.</p>
+    </section>
+
+    <!-- Eligible comparison -->
+    <section class="card p-5 sm:p-6" th:with="eligibleOffers=${outcome.offers.?[eligible]}, otherOffers=${outcome.offers.?[!eligible]}">
+        <h2 class="font-display font-bold text-lg mb-1">All eligible options</h2>
+        <p class="text-xs text-slate-500 mb-4">Ranked by total cost of the loan - interest plus processing fee and GST.</p>
+
+        <p th:if="${eligibleOffers.isEmpty()}" class="text-sm text-slate-500">No bank is eligible on the current details.</p>
+
+        <!-- Mobile cards -->
+        <div class="space-y-3 sm:hidden" th:unless="${eligibleOffers.isEmpty()}">
+            <div th:each="o : ${eligibleOffers}" class="rounded-xl border border-slate-200 p-4"
+                 th:classappend="${o.recommended} ? 'bg-brand-50' : ''">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="font-semibold flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full shrink-0" th:style="'background:' + (${o.lenderColor} ?: '#94a3b8')"></span>
+                            <span th:text="${o.lenderName}">Bank</span>
+                        </p>
+                        <p class="text-xs text-slate-400" th:text="${o.productName}">Product</p>
+                    </div>
+                    <p class="font-display font-bold text-lg text-brand-700" th:text="${fmt.pct(o.applicableRate)}">8.5%</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-3 text-xs">
+                    <div><p class="text-slate-400">EMI</p><p class="font-semibold text-sm" th:text="'₹' + ${fmt.inr(o.emi)}">₹0</p></div>
+                    <div><p class="text-slate-400">Fee</p><p class="font-semibold text-sm" th:text="'₹' + ${fmt.inr(o.processingFee)}">₹0</p></div>
+                    <div><p class="text-slate-400">Total cost</p><p class="font-semibold text-sm" th:text="'₹' + ${fmt.lakhs(o.totalCost)}">₹0</p></div>
+                </div>
+                <p th:if="${o.status != null and o.status.name() == 'ELIGIBLE_REDUCED'}" class="text-xs text-amber-700 mt-2"
+                   th:text="'Eligible up to ₹' + ${fmt.inr(o.maxEligibleAmount)}">reduced</p>
+                <ul th:unless="${o.benefits == null or o.benefits.isEmpty()}" class="mt-2 flex flex-wrap gap-1">
+                    <li th:each="b : ${o.benefits}" class="badge badge-slate" th:text="${b}">benefit</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Desktop table -->
+        <div class="hidden sm:block overflow-x-auto -mx-6 px-6" th:unless="${eligibleOffers.isEmpty()}">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr><th>Bank</th><th>Rate</th><th class="text-right">EMI</th><th class="text-right">Processing fee</th><th class="text-right">Total cost</th><th>Key benefits</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="o : ${eligibleOffers}" class="table-row align-top" th:classappend="${o.recommended} ? 'bg-brand-50' : ''">
+                    <td>
+                        <p class="font-semibold flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full shrink-0" th:style="'background:' + (${o.lenderColor} ?: '#94a3b8')"></span>
+                            <span th:text="${o.lenderName}">Bank</span>
+                            <i th:if="${o.recommended}" class="bi bi-star-fill text-amber-500 text-xs"></i>
+                        </p>
+                        <p class="text-xs text-slate-400" th:text="${o.productName}">Product</p>
+                        <p th:if="${o.status != null and o.status.name() == 'ELIGIBLE_REDUCED'}" class="text-xs text-amber-700"
+                           th:text="'Eligible up to ₹' + ${fmt.inr(o.maxEligibleAmount)}">reduced</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <span class="font-semibold" th:text="${fmt.pct(o.applicableRate)}">8.5%</span>
+                        <p class="text-[11px] text-slate-400" th:if="${o.rateTypeLabel}" th:text="${o.rateTypeLabel}">Floating</p>
+                    </td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(o.emi)}">₹0</td>
+                    <td class="text-right whitespace-nowrap">
+                        <span th:text="'₹' + ${fmt.inr(o.processingFee)}">₹0</span>
+                        <p class="text-[11px] text-slate-400" th:text="'+ ₹' + ${fmt.inr(o.processingFeeGst)} + ' GST'">GST</p>
+                    </td>
+                    <td class="text-right whitespace-nowrap">
+                        <span class="font-semibold" th:text="'₹' + ${fmt.inr(o.totalCost)}">₹0</span>
+                        <p th:if="${o.extraCostVsBest != null and o.extraCostVsBest.signum() > 0}" class="text-[11px] text-slate-400"
+                           th:text="'+₹' + ${fmt.inr(o.extraCostVsBest)} + ' vs best'">vs best</p>
+                    </td>
+                    <td class="text-xs text-slate-600 min-w-[12rem]">
+                        <ul th:unless="${o.benefits == null or o.benefits.isEmpty()}" class="space-y-0.5">
+                            <li th:each="b : ${o.benefits}" class="flex gap-1"><i class="bi bi-check2 text-emerald-500"></i><span th:text="${b}">benefit</span></li>
+                        </ul>
+                        <p th:if="${o.prepaymentCharges}" class="text-slate-400 mt-1" th:text="'Prepayment: ' + ${o.prepaymentCharges}">prepayment</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Not eligible -->
+        <details th:unless="${otherOffers.isEmpty()}" class="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <summary class="text-sm font-semibold text-slate-600 cursor-pointer"
+                     th:text="${otherOffers.size()} + ' other ' + (${otherOffers.size() == 1} ? 'bank' : 'banks') + ' checked - not eligible right now'">Other banks</summary>
+            <ul class="mt-3 space-y-3">
+                <li th:each="o : ${otherOffers}" class="text-sm">
+                    <p class="font-medium" th:text="${o.lenderName} + ' · ' + ${o.productName}">Bank</p>
+                    <ul class="text-xs text-slate-500 mt-0.5 space-y-0.5">
+                        <li th:each="x : ${o.reasons}" class="flex gap-1"><i class="bi bi-dot"></i><span th:text="${x}">reason</span></li>
+                    </ul>
+                </li>
+            </ul>
+        </details>
+    </section>
+
+    <!-- Schedule -->
+    <section class="card p-5 sm:p-6" th:unless="${outcome.schedule == null or outcome.schedule.isEmpty()}">
+        <h2 class="font-display font-bold text-lg mb-1">How the loan reduces, year by year</h2>
+        <p class="text-xs text-slate-500 mb-4">For the recommended option. Early years go mostly to interest - prepaying then saves the most.</p>
+        <div class="overflow-x-auto -mx-6 px-6 max-h-[26rem] overflow-y-auto">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr><th>Year</th><th class="text-right">Principal paid</th><th class="text-right">Interest paid</th><th class="text-right">Balance at year end</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="y : ${outcome.schedule}" class="table-row">
+                    <td class="font-semibold" th:text="${y.year}">1</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(y.principal)}">₹0</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(y.interest)}">₹0</td>
+                    <td class="text-right whitespace-nowrap" th:text="'₹' + ${fmt.inr(y.closing)}">₹0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Disclaimer -->
+    <section class="text-xs text-slate-500 leading-relaxed px-1">
+        <p><i class="bi bi-info-circle"></i> Rates are indicative as on the date shown and subject to the lender's final credit approval.
+            EMIs are rounded to the nearest rupee. Processing fees and GST are as published by each lender and may be revised by them.</p>
+        <p class="mt-2" th:if="${agency != null}">
+            Prepared by <span th:text="${agency.displayName}">Agency</span><span th:if="${agency.dsaCode}" th:text="' (DSA code ' + ${agency.dsaCode} + ')'"></span><span th:if="${agency.city}" th:text="', ' + ${agency.city}"></span>.
+        </p>
+    </section>
+</main>
+
+<!-- Sticky CTA -->
+<div th:if="${phoneDigits != null and !phoneDigits.isEmpty()}"
+     class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+    <div class="max-w-4xl mx-auto flex items-center gap-3">
+        <p class="hidden sm:block flex-1 text-sm text-slate-600">Questions about this comparison? We are a call away.</p>
+        <a th:href="'tel:+' + ${phoneDigits}" class="btn btn-outline flex-1 sm:flex-none"><i class="bi bi-telephone"></i> Call us</a>
+        <a th:href="'https://wa.me/' + ${phoneDigits} + '?text=' + ${#uris.escapeQueryParam('Hi, I have a question about loan proposal ' + proposal.code)}"
+           target="_blank" rel="noopener" class="btn btn-success flex-1 sm:flex-none"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
+    <title>Sign in · Loanmust</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: {
+            fontFamily: { display: ['"Plus Jakarta Sans"','sans-serif'], sans: ['Inter','sans-serif'] },
+            colors: { ink:'#0F172A', brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } }
+        } } };
+    </script>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+    <style>
+        .login-tab { display:inline-flex; align-items:center; justify-content:center; gap:.35rem;
+            padding:.5rem .4rem; border-radius:.6rem; font-size:.78rem; font-weight:600; color:#64748b;
+            background:transparent; border:0; cursor:pointer; transition:all .15s ease; white-space:nowrap; }
+        .login-tab:hover { color:#4338ca; }
+        .login-tab.is-active { background:#fff; color:#4f46e5; box-shadow:0 1px 2px rgba(16,24,40,.06); }
+    </style>
+</head>
+<body class="font-sans bg-white text-ink min-h-screen">
+
+<div class="min-h-screen lg:grid lg:grid-cols-2">
+
+    <!-- Left: brand -->
+    <div class="hidden lg:flex flex-col justify-between p-10 xl:p-14 bg-gradient-to-br from-brand-700 via-brand-800 to-brand-900 text-white relative overflow-hidden">
+        <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/10 blur-2xl"></div>
+        <div class="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-brand-400/20 blur-2xl"></div>
+
+        <div class="relative flex items-center gap-3">
+            <img th:src="@{/favicon.svg}" alt="" class="h-11 w-11 rounded-xl ring-2 ring-white/20"/>
+            <div class="leading-tight">
+                <p class="font-display font-extrabold text-2xl tracking-tight">Loan<span class="text-brand-200">must</span></p>
+                <p class="text-xs text-white/70">Loan agent desk</p>
+            </div>
+        </div>
+
+        <div class="relative max-w-md">
+            <h2 class="font-display font-extrabold text-3xl xl:text-4xl leading-tight">
+                From first enquiry to disbursement - and the payout after.
+            </h2>
+            <p class="text-white/80 mt-4">
+                Work every lead from builders, LIC and referral partners, compare all banks' rates in seconds,
+                run each loan file through login, sanction and disbursement, track MODD registration, and pay
+                your referral partners the day a loan disburses.
+            </p>
+
+            <div class="grid grid-cols-3 gap-3 mt-8">
+                <div class="rounded-2xl bg-white/10 backdrop-blur px-4 py-4 text-center">
+                    <i class="bi bi-bank text-2xl"></i>
+                    <p class="text-[11px] text-white/70 mt-1">Every bank compared in one click</p>
+                </div>
+                <div class="rounded-2xl bg-white/10 backdrop-blur px-4 py-4 text-center">
+                    <i class="bi bi-folder2-open text-2xl"></i>
+                    <p class="text-[11px] text-white/70 mt-1">Loan files, stage by stage</p>
+                </div>
+                <div class="rounded-2xl bg-white/10 backdrop-blur px-4 py-4 text-center">
+                    <i class="bi bi-send-check text-2xl"></i>
+                    <p class="text-[11px] text-white/70 mt-1">Referral payouts on disbursement</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="relative text-xs text-white/60">Loanmust · Loan agent (DSA) operations, digitised</p>
+    </div>
+
+    <!-- Right: form -->
+    <div class="flex flex-col min-h-screen lg:min-h-0">
+        <div class="flex items-center px-6 pt-6 lg:hidden">
+            <img th:src="@{/favicon.svg}" alt="" class="h-9 w-9"/>
+            <p class="ml-2.5 font-display font-extrabold text-lg tracking-tight">Loan<span class="text-brand-600">must</span></p>
+        </div>
+
+        <div class="flex-1 grid place-items-center px-6 py-10">
+            <div class="w-full max-w-sm">
+                <h1 class="font-display font-extrabold text-2xl">Sign in</h1>
+                <p class="text-sm text-slate-500 mt-1" id="signinSub">Full access - leads, bank comparison, loan files, MODD, payouts and reports.</p>
+
+                <!-- Role tabs: pick a desk to pre-fill the matching demo sign-in -->
+                <div class="mt-5 grid grid-cols-3 sm:grid-cols-5 gap-1 rounded-xl bg-slate-100 p-1" role="tablist">
+                    <button type="button" class="login-tab is-active" data-tab
+                            data-email="owner@shreefinserv.in" data-pass="owner123"
+                            data-sub="Full access - leads, bank comparison, loan files, MODD, payouts and reports.">
+                        <i class="bi bi-shield-shaded"></i> Owner</button>
+                    <button type="button" class="login-tab" data-tab
+                            data-email="executive@shreefinserv.in" data-pass="executive123"
+                            data-sub="Work your own leads, compare banks and share proposals.">
+                        <i class="bi bi-headset"></i> Executive</button>
+                    <button type="button" class="login-tab" data-tab
+                            data-email="processing@shreefinserv.in" data-pass="processing123"
+                            data-sub="Run loan files with the bank - documents, login, sanction, MODD and disbursement.">
+                        <i class="bi bi-folder2-open"></i> Processing</button>
+                    <button type="button" class="login-tab" data-tab
+                            data-email="dataentry@shreefinserv.in" data-pass="dataentry123"
+                            data-sub="Key in leads, customers and documents.">
+                        <i class="bi bi-keyboard"></i> Data entry</button>
+                    <button type="button" class="login-tab" data-tab
+                            data-email="finance@shreefinserv.in" data-pass="finance123"
+                            data-sub="Fee receipts, bank payouts and referral partner payouts.">
+                        <i class="bi bi-cash-stack"></i> Finance</button>
+                </div>
+
+                <div th:if="${param.error}" class="mt-5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+                    Those details do not match an active account. Check your email and password.
+                </div>
+                <div th:if="${param.logout}" class="mt-5 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600">
+                    You are signed out.
+                </div>
+                <div th:if="${param.passwordChanged}" class="mt-5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                    Password changed. Sign in with your new password.
+                </div>
+
+                <form th:action="@{/login}" method="post" class="mt-6 space-y-4">
+                    <div>
+                        <label class="form-label" for="email">Email address</label>
+                        <input type="email" id="email" name="email" required autofocus autocomplete="username"
+                               class="form-input" placeholder="you@agency.in"/>
+                    </div>
+                    <div>
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
+                               class="form-input" placeholder="Your password"/>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i class="bi bi-box-arrow-in-right"></i> Sign in
+                    </button>
+                </form>
+
+                <div class="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                    <p class="font-semibold text-slate-600 mb-1">Demo sign-in</p>
+                    <p>owner@shreefinserv.in / owner123</p>
+                    <p>executive@shreefinserv.in / executive123</p>
+                    <p>processing@shreefinserv.in / processing123</p>
+                    <p>dataentry@shreefinserv.in / dataentry123</p>
+                    <p>finance@shreefinserv.in / finance123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script>
+    (function () {
+        var tabs = document.querySelectorAll('[data-tab]');
+        var emailEl = document.getElementById('email');
+        var passEl = document.getElementById('password');
+        var subEl = document.getElementById('signinSub');
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                tabs.forEach(function (t) { t.classList.remove('is-active'); });
+                tab.classList.add('is-active');
+                if (emailEl) emailEl.value = tab.getAttribute('data-email');
+                if (passEl) passEl.value = tab.getAttribute('data-pass');
+                if (subEl) subEl.textContent = tab.getAttribute('data-sub');
+            });
+        });
+    })();
+</script>
+</body>
+</html>

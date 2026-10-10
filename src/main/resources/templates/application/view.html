@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${app.code} + ' · ' + ${app.customerName}">Loan file</title></head>
+<body>
+<div layout:fragment="page-title" th:text="'Loan file ' + ${app.code}">Loan file</div>
+
+<div layout:fragment="content">
+<th:block th:with="appTok=${enc.encode(app.id)}, cur=${path.indexOf(app.stage)}, st=${app.stage.name()}">
+    <div th:replace="~{fragments/ui :: crumbs(parent='Loan files', parentUrl='/applications', current=${app.code})}"></div>
+
+    <div th:if="${app.sanctionExpiring}" class="mb-5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800 flex items-start gap-3">
+        <i class="bi bi-exclamation-triangle-fill text-rose-500 mt-0.5"></i>
+        <div>
+            <b>Sanction letter about to lapse.</b> Validity ends on
+            <b th:text="${#temporals.format(app.sanctionValidTill,'dd MMM yyyy')}">date</b> and nothing has been disbursed yet.
+            Push the agreement and MODD, or ask the lender to revalidate the sanction.
+        </div>
+    </div>
+
+    <div th:if="${app.stage.terminalFailure}" class="mb-5 rounded-xl bg-slate-100 border border-slate-200 px-4 py-3 text-sm text-slate-700 flex items-start gap-3">
+        <i th:class="'bi ' + ${app.stage.icon} + ' mt-0.5'"></i>
+        <div>
+            <b th:text="'This file is ' + ${app.stageLabel.toLowerCase()} + '.'">Closed.</b>
+            <span th:if="${app.rejectionReason}" th:text="${app.rejectionReason}"></span>
+            Use <b>Move stage</b> below to reopen it if the customer comes back.
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        <!-- ================= Left column ================= -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Header card -->
+            <div class="card p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="h-14 w-14 shrink-0 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center text-xl">
+                            <i th:class="'bi ' + ${app.stage.icon}"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-400" th:text="${app.code}">LA-0001</p>
+                            <h2 class="font-display font-bold text-xl">
+                                <a th:href="@{'/customers/' + ${enc.encode(app.customerId)}}" class="hover:text-brand-700" th:text="${app.customerName}">Customer</a>
+                            </h2>
+                            <p class="text-sm text-slate-500">
+                                <span th:text="${app.lenderName} ?: 'Lender not chosen'">Lender</span>
+                                <span th:if="${app.productName}" th:text="' · ' + ${app.productName}"></span>
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                                <span class="badge" th:classappend="'badge-' + ${app.stageTone}" th:text="${app.stageLabel}">Stage</span>
+                                <span class="badge badge-slate" th:text="${app.loanTypeLabel}">Home loan</span>
+                                <span class="text-xs text-slate-400" th:if="${app.open}" th:text="${app.daysInStage} + ' days in this stage'">0 days</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a th:href="@{'/applications/' + ${appTok} + '/edit'}" class="btn btn-outline"><i class="bi bi-pencil"></i> Edit</a>
+                        <a th:if="${whatsappLink}" th:href="${whatsappLink}" target="_blank" rel="noopener" class="btn btn-success"
+                           title="Send the customer a status update"><i class="bi bi-whatsapp"></i> Status update</a>
+                        <form th:if="${perms == null or perms.canDelete('applications')}" th:action="@{'/applications/' + ${appTok} + '/archive'}" method="post"
+                              data-confirm="Archive this loan file? It stays in the audit trail.">
+                            <button type="submit" class="btn btn-danger" title="Archive"><i class="bi bi-archive"></i></button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Stage stepper -->
+                <div class="mt-6 pt-5 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Progress</p>
+                        <span class="text-xs text-slate-500" th:text="${app.progressPercent} + '%'">0%</span>
+                    </div>
+                    <div class="overflow-x-auto -mx-1 px-1 pb-1">
+                        <div class="flex items-center gap-1.5 min-w-max">
+                            <th:block th:each="s, it : ${path}">
+                                <span class="step-dot whitespace-nowrap text-xs"
+                                      th:classappend="${cur >= 0 and it.index < cur} ? 'done' : (${it.index == cur} ? 'active' : '')">
+                                    <i class="bi" th:classappend="${cur >= 0 and it.index < cur} ? 'bi-check2' : ${s.icon}"></i>
+                                    <span th:text="${s.label}">Stage</span>
+                                </span>
+                                <i th:unless="${it.last}" class="bi bi-chevron-right text-[10px] text-slate-300"></i>
+                            </th:block>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key numbers -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-4">Key numbers</h3>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card stat-slate">
+                        <i class="stat-ico bi bi-cash-stack"></i>
+                        <p class="stat-label">Requested</p>
+                        <p class="stat-value" th:text="'₹' + ${fmt.lakhs(app.requestedAmount)}">₹0</p>
+                        <p class="stat-sub" th:text="${app.tenureYears != null} ? ${app.tenureYears} + ' years' : 'Tenure not set'">20 years</p>
+                    </div>
+                    <div class="stat-card stat-amber">
+                        <i class="stat-ico bi bi-patch-check"></i>
+                        <p class="stat-label">Sanctioned</p>
+                        <p class="stat-value" th:text="${app.sanctionedAmount != null} ? '₹' + ${fmt.lakhs(app.sanctionedAmount)} : '—'">—</p>
+                        <p class="stat-sub" th:if="${app.sanctionedAmount != null}"
+                           th:text="${fmt.pct(app.sanctionedRate)} + (${app.sanctionedTenureYears} != null ? ' · ' + ${app.sanctionedTenureYears} + ' yrs' : '')">8.5%</p>
+                        <p class="stat-sub" th:unless="${app.sanctionedAmount != null}">Awaiting sanction</p>
+                    </div>
+                    <div class="stat-card stat-emerald">
+                        <i class="stat-ico bi bi-cash-coin"></i>
+                        <p class="stat-label">Disbursed</p>
+                        <p class="stat-value" th:text="'₹' + ${fmt.lakhs(app.totalDisbursed)}">₹0</p>
+                        <p class="stat-sub" th:text="${app.disbursementStatus != null} ? ${app.disbursementStatus.label} : 'Not disbursed'">Not disbursed</p>
+                    </div>
+                    <div class="stat-card stat-brand">
+                        <i class="stat-ico bi bi-calendar2-week"></i>
+                        <p class="stat-label">Monthly EMI</p>
+                        <p class="stat-value" th:text="${app.sanctionedEmi != null} ? '₹' + ${fmt.inr(app.sanctionedEmi)} : '—'">—</p>
+                        <p class="stat-sub">On the sanctioned terms</p>
+                    </div>
+                </div>
+
+                <dl class="grid sm:grid-cols-3 gap-4 text-sm">
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Disbursement</dt>
+                        <dd class="font-medium mt-0.5">
+                            <span class="badge" th:if="${app.disbursementStatus != null}" th:classappend="'badge-' + ${app.disbursementStatus.tone}" th:text="${app.disbursementStatus.label}">Status</span>
+                            <span th:if="${app.pendingDisbursal != null and app.pendingDisbursal.signum() > 0}" class="block text-xs text-slate-500 mt-1"
+                                  th:text="'₹' + ${fmt.inr(app.pendingDisbursal)} + ' still to disburse'">pending</span>
+                        </dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Bank reference</dt>
+                        <dd class="font-medium" th:text="${app.bankReference} ?: 'Not logged in yet'">—</dd>
+                        <dd class="text-xs text-slate-400" th:if="${app.loginDate}" th:text="'Logged in ' + ${#temporals.format(app.loginDate,'dd MMM yyyy')}">date</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Sanction validity</dt>
+                        <dd class="font-medium" th:if="${app.sanctionValidTill}" th:classappend="${app.sanctionExpiring} ? 'text-rose-600' : ''"
+                            th:text="'Till ' + ${#temporals.format(app.sanctionValidTill,'dd MMM yyyy')}">date</dd>
+                        <dd class="font-medium" th:unless="${app.sanctionValidTill}">—</dd>
+                        <dd class="text-xs text-slate-400" th:if="${app.sanctionDate}" th:text="'Sanctioned ' + ${#temporals.format(app.sanctionDate,'dd MMM yyyy')}">date</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Builder / project</dt>
+                        <dd class="font-medium">
+                            <a th:if="${app.builderId}" th:href="@{'/builders/' + ${enc.encode(app.builderId)}}" class="hover:text-brand-700" th:text="${app.builderName}">Builder</a>
+                            <span th:unless="${app.builderId}">—</span>
+                        </dd>
+                        <dd class="text-xs text-slate-400" th:if="${app.projectName}" th:text="${app.projectName}">Project</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Referral partner</dt>
+                        <dd class="font-medium" th:text="${app.referralPartnerName} ?: '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Source</dt>
+                        <dd class="font-medium" th:text="${app.source != null} ? ${app.source.label} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Executive</dt>
+                        <dd class="font-medium" th:text="${app.assignedUserName} ?: 'Unassigned'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Processor</dt>
+                        <dd class="font-medium" th:text="${app.processorName} ?: 'Unassigned'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Expected disbursement</dt>
+                        <dd class="font-medium" th:text="${app.expectedDisbursementDate != null} ? ${#temporals.format(app.expectedDisbursementDate,'dd MMM yyyy')} : '—'">—</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Property value</dt>
+                        <dd class="font-medium" th:text="${app.propertyValue != null} ? '₹' + ${fmt.inr(app.propertyValue)} : '—'">—</dd>
+                        <dd class="text-xs text-slate-400" th:if="${app.propertyType}" th:text="${app.propertyType}">type</dd></div>
+                    <div><dt class="text-slate-400 text-xs uppercase tracking-wide">Co-applicant</dt>
+                        <dd class="font-medium" th:text="${app.coApplicantName} ?: '—'">—</dd>
+                        <dd class="text-xs text-slate-400" th:if="${app.coApplicantName}"
+                            th:text="(${app.coApplicantRelation} ?: 'Co-applicant') + (${app.coApplicantIncome} != null ? ' · ₹' + ${fmt.inr(app.coApplicantIncome)} + '/month' : '')">rel</dd></div>
+                    <div th:if="${showMoney}"><dt class="text-slate-400 text-xs uppercase tracking-wide">Our payout</dt>
+                        <dd class="font-medium" th:text="${fmt.pct(app.payoutPercent)}">—</dd></div>
+                    <div class="sm:col-span-3" th:if="${app.propertyAddress}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Property address</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${app.propertyAddress}">—</dd></div>
+                    <div class="sm:col-span-3" th:if="${app.notes}">
+                        <dt class="text-slate-400 text-xs uppercase tracking-wide">Notes</dt>
+                        <dd class="text-slate-600 mt-1" th:text="${app.notes}">—</dd></div>
+                </dl>
+            </div>
+
+            <!-- Workflow actions -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-1">Move the file forward</h3>
+                <p class="text-xs text-slate-400 mb-4">The step that fits the current stage is open; every other action is one click away.</p>
+
+                <div class="space-y-3">
+                    <!-- Bank login -->
+                    <details class="rounded-xl border border-slate-200 group" th:open="${st == 'DOCS_PENDING'}">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm">
+                            <i class="bi bi-box-arrow-in-right text-brand-600"></i> Record bank login
+                            <span th:if="${app.bankReference}" class="badge badge-emerald ml-auto">Done</span>
+                        </summary>
+                        <form th:action="@{'/applications/' + ${appTok} + '/login'}" method="post" class="grid sm:grid-cols-2 gap-4 px-4 pb-4">
+                            <div>
+                                <label class="form-label">Bank reference / LOS no.</label>
+                                <input type="text" name="bankReference" required th:value="${app.bankReference}" class="form-input" placeholder="Application number from the lender"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Login date</label>
+                                <input type="date" name="loginDate" th:value="${app.loginDate != null} ? ${app.loginDate} : ${today}" class="form-input"/>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Remarks <span class="text-slate-400 font-normal">(optional)</span></label>
+                                <input type="text" name="remarks" class="form-input" placeholder="e.g. Logged in at Andheri branch, PD expected Monday"/>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right"></i> Record login</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <!-- Sanction -->
+                    <details class="rounded-xl border border-slate-200" th:open="${st == 'LOGGED_IN' or st == 'CREDIT_REVIEW' or st == 'TECHNICAL_LEGAL'}">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm">
+                            <i class="bi bi-patch-check text-amber-600"></i> Record sanction
+                            <span th:if="${app.sanctionedAmount != null}" class="badge badge-emerald ml-auto">Done</span>
+                        </summary>
+                        <form th:action="@{'/applications/' + ${appTok} + '/sanction'}" method="post" class="grid sm:grid-cols-3 gap-4 px-4 pb-4">
+                            <div>
+                                <label class="form-label">Sanctioned amount (₹)</label>
+                                <input type="number" step="1" min="1" name="sanctionedAmount" required
+                                       th:value="${app.sanctionedAmount != null} ? ${app.sanctionedAmount} : ${app.requestedAmount}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Rate (% p.a.)</label>
+                                <input type="number" step="0.01" min="0" name="sanctionedRate" th:value="${app.sanctionedRate}" class="form-input" placeholder="e.g. 8.50"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Tenure (years)</label>
+                                <input type="number" step="1" min="1" name="sanctionedTenureYears"
+                                       th:value="${app.sanctionedTenureYears != null} ? ${app.sanctionedTenureYears} : ${app.tenureYears}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Sanction date</label>
+                                <input type="date" name="sanctionDate" th:value="${app.sanctionDate != null} ? ${app.sanctionDate} : ${today}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Valid till</label>
+                                <input type="date" name="sanctionValidTill" th:value="${app.sanctionValidTill}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Remarks</label>
+                                <input type="text" name="remarks" class="form-input" placeholder="Conditions, if any"/>
+                            </div>
+                            <p class="sm:col-span-3 text-[11px] text-slate-400">The EMI is worked out from amount, rate and tenure. You are warned 15 days before validity ends.</p>
+                            <div class="sm:col-span-3">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-patch-check"></i> Record sanction</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <!-- Disbursement -->
+                    <details class="rounded-xl border border-slate-200"
+                             th:open="${st == 'SANCTIONED' or st == 'MODD_AGREEMENT' or (app.disbursementStatus != null and app.disbursementStatus.name() == 'PARTIAL')}">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm">
+                            <i class="bi bi-cash-coin text-emerald-600"></i> Record disbursement
+                            <span th:if="${app.disbursementStatus != null}" class="badge ml-auto" th:classappend="'badge-' + ${app.disbursementStatus.tone}" th:text="${app.disbursementStatus.label}">Status</span>
+                        </summary>
+                        <form th:action="@{'/applications/' + ${appTok} + '/disburse'}" method="post" class="grid sm:grid-cols-3 gap-4 px-4 pb-4">
+                            <p class="sm:col-span-3 text-xs text-slate-500 rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2">
+                                <i class="bi bi-lightning-charge"></i> Raises the bank payout and the referral payout automatically.
+                                Record each tranche separately for construction-linked loans.
+                            </p>
+                            <div>
+                                <label class="form-label">Disbursed on</label>
+                                <input type="date" name="disbursedOn" required th:value="${today}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Amount (₹)</label>
+                                <input type="number" step="1" min="1" name="amount" required th:value="${app.pendingDisbursal}" class="form-input"/>
+                            </div>
+                            <div>
+                                <label class="form-label">Paid to</label>
+                                <input type="text" name="paidTo" list="paidToOptions" class="form-input" placeholder="Builder / seller / customer"/>
+                                <datalist id="paidToOptions">
+                                    <option th:if="${app.builderName}" th:value="${app.builderName}"></option>
+                                    <option value="Seller"></option>
+                                    <option value="Customer"></option>
+                                    <option value="Existing lender (BT)"></option>
+                                </datalist>
+                            </div>
+                            <div>
+                                <label class="form-label">Cheque / UTR reference</label>
+                                <input type="text" name="reference" class="form-input"/>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Remarks</label>
+                                <input type="text" name="remarks" class="form-input"/>
+                            </div>
+                            <div class="sm:col-span-3">
+                                <button type="submit" class="btn btn-success"><i class="bi bi-cash-coin"></i> Record disbursement</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <!-- Move stage -->
+                    <details class="rounded-xl border border-slate-200" th:open="${st == 'CREDIT_REVIEW' or st == 'TECHNICAL_LEGAL'}">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm">
+                            <i class="bi bi-arrow-right-circle text-indigo-600"></i> Move stage
+                        </summary>
+                        <form th:action="@{'/applications/' + ${appTok} + '/stage'}" method="post" class="grid sm:grid-cols-3 gap-4 px-4 pb-4">
+                            <div>
+                                <label class="form-label">New stage</label>
+                                <select name="stage" class="form-select">
+                                    <option th:each="s : ${stages}" th:value="${s.name()}" th:text="${s.label}"
+                                            th:selected="${s.name() == st}">Stage</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Remarks <span class="text-slate-400 font-normal">(reason, if rejected or withdrawn)</span></label>
+                                <input type="text" name="remarks" class="form-input" placeholder="e.g. Technical valuation done, legal opinion awaited"/>
+                            </div>
+                            <p class="sm:col-span-3 text-[11px] text-slate-400">Disbursed is set by recording a disbursement, not from here.</p>
+                            <div class="sm:col-span-3">
+                                <button type="submit" class="btn btn-outline"><i class="bi bi-arrow-right-circle"></i> Move stage</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <!-- Note / bank query -->
+                    <details class="rounded-xl border border-slate-200">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm">
+                            <i class="bi bi-chat-left-text text-slate-500"></i> Add note / bank query
+                        </summary>
+                        <form th:action="@{'/applications/' + ${appTok} + '/note'}" method="post" class="grid sm:grid-cols-3 gap-4 px-4 pb-4">
+                            <div>
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="NOTE">Note</option>
+                                    <option value="BANK_QUERY">Bank query</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label">Details</label>
+                                <textarea name="remarks" rows="2" required class="form-textarea"
+                                          placeholder="e.g. Bank wants 6 months' salary slips and Form 16 for FY 2025-26"></textarea>
+                            </div>
+                            <div class="sm:col-span-3">
+                                <button type="submit" class="btn btn-outline"><i class="bi bi-journal-plus"></i> Add to timeline</button>
+                            </div>
+                        </form>
+                    </details>
+                </div>
+            </div>
+
+            <!-- MODD -->
+            <div class="card p-6" th:if="${modd != null or app.loanType.secured}">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 class="font-display font-bold"><i class="bi bi-file-earmark-lock text-amber-600"></i> MODD (mortgage deposit)</h3>
+                        <p class="text-xs text-slate-400 mt-1">Memorandum of deposit of title deeds, registered at the sub-registrar; the originals then go to the bank.</p>
+                    </div>
+                    <th:block th:if="${modd != null}">
+                        <a th:href="@{'/modd/' + ${enc.encode(modd.id)}}" class="btn btn-outline btn-sm"><i class="bi bi-box-arrow-up-right"></i> Open MODD job</a>
+                    </th:block>
+                    <form th:if="${modd == null}" th:action="@{'/applications/' + ${appTok} + '/modd'}" method="post">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-play-circle"></i> Start MODD</button>
+                    </form>
+                </div>
+                <div th:if="${modd != null}" class="mt-4 grid sm:grid-cols-3 gap-4 text-sm">
+                    <div><p class="text-slate-400 text-xs uppercase tracking-wide">Status</p>
+                        <span class="badge mt-1" th:classappend="'badge-' + ${modd.statusTone}" th:text="${modd.statusLabel}">Status</span></div>
+                    <div><p class="text-slate-400 text-xs uppercase tracking-wide">Appointment</p>
+                        <p class="font-medium" th:text="${modd.appointmentAt != null} ? ${#temporals.format(modd.appointmentAt,'dd MMM yyyy, hh:mm a')} : 'Not booked'">—</p></div>
+                    <div><p class="text-slate-400 text-xs uppercase tracking-wide">Progress</p>
+                        <span class="meter mt-2"><span th:style="'width:' + ${modd.progressPercent} + '%'"></span></span></div>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="card p-6" id="documents">
+                <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="font-display font-bold">Document checklist</h3>
+                        <p class="text-sm text-slate-500" th:text="${docProgress[0]} + ' of ' + ${docProgress[1]} + ' mandatory documents'">0 of 0</p>
+                    </div>
+                    <div class="w-40" th:with="pct=${docProgress[1] == 0 ? 100 : docProgress[0] * 100 / docProgress[1]}">
+                        <span class="meter"><span th:style="'width:' + ${pct} + '%'"></span></span>
+                        <p class="text-[11px] text-slate-400 text-right mt-1" th:text="${pct} + '% complete'">0%</p>
+                    </div>
+                </div>
+
+                <p th:if="${documents.isEmpty()}" class="text-sm text-slate-400 mb-4">No checklist lines. Add the documents the lender asks for below.</p>
+
+                <div th:unless="${documents.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head">
+                        <tr><th>Document</th><th>Status</th><th>File</th><th class="text-right">Upload / remove</th></tr>
+                        </thead>
+                        <tbody>
+                        <th:block th:each="d, it : ${documents}">
+                            <tr th:if="${it.index == 0 or documents[it.index - 1].category != d.category}">
+                                <td colspan="4" class="pt-4 pb-1 text-[11px] uppercase tracking-wide font-semibold text-slate-400" th:text="${d.categoryLabel}">KYC</td>
+                            </tr>
+                            <tr class="table-row">
+                                <td>
+                                    <p class="font-medium text-sm">
+                                        <span th:text="${d.docName}">PAN card</span>
+                                        <span th:if="${d.mandatory}" class="text-rose-500" title="Mandatory">*</span>
+                                    </p>
+                                    <p class="text-[11px] text-slate-400">
+                                        <span th:text="${d.categoryLabel}">KYC</span>
+                                        <span th:unless="${d.mandatory}"> · optional</span>
+                                        <span th:if="${d.receivedOn}" th:text="' · received ' + ${#temporals.format(d.receivedOn,'dd MMM')}"></span>
+                                    </p>
+                                </td>
+                                <td class="whitespace-nowrap">
+                                    <form th:action="@{'/applications/documents/' + ${enc.encode(d.id)} + '/status'}" method="post" class="flex items-center gap-1.5">
+                                        <span class="badge" th:classappend="'badge-' + ${d.statusTone}" th:text="${d.statusLabel}">Pending</span>
+                                        <select name="status" class="form-select !py-1 !text-xs w-32" onchange="this.form.submit()" aria-label="Change status">
+                                            <option th:each="s : ${docStatuses}" th:value="${s.name()}" th:text="${s.label}"
+                                                    th:selected="${d.status != null and d.status.name() == s.name()}">Status</option>
+                                        </select>
+                                        <noscript><button type="submit" class="btn btn-ghost btn-sm">Set</button></noscript>
+                                    </form>
+                                </td>
+                                <td class="text-sm">
+                                    <a th:if="${d.hasFile}" th:href="@{'/applications/documents/' + ${enc.encode(d.id)} + '/file'}" target="_blank" rel="noopener"
+                                       class="inline-flex items-center gap-1 text-brand-600 hover:underline max-w-[12rem] truncate">
+                                        <i class="bi bi-paperclip"></i> <span class="truncate" th:text="${d.fileName} ?: 'View file'">file.pdf</span>
+                                    </a>
+                                    <span th:unless="${d.hasFile}" class="text-slate-300">—</span>
+                                </td>
+                                <td class="text-right whitespace-nowrap">
+                                    <div class="inline-flex items-center gap-1">
+                                        <form th:action="@{'/applications/documents/' + ${enc.encode(d.id)} + '/upload'}" method="post" enctype="multipart/form-data"
+                                              class="inline-flex items-center gap-1">
+                                            <input type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                                   class="text-xs w-44 file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-xs"/>
+                                            <button type="submit" class="inline-grid place-items-center h-8 w-8 rounded-lg text-brand-600 hover:bg-slate-100" title="Upload">
+                                                <i class="bi bi-upload"></i></button>
+                                        </form>
+                                        <form th:action="@{'/applications/documents/' + ${enc.encode(d.id)} + '/remove'}" method="post" class="inline"
+                                              data-confirm="Remove this line from the checklist?">
+                                            <button type="submit" class="inline-grid place-items-center h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" title="Remove">
+                                                <i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </th:block>
+                        </tbody>
+                    </table>
+                </div>
+
+                <form th:action="@{'/applications/' + ${appTok} + '/documents/add'}" method="post"
+                      class="mt-5 pt-5 border-t border-slate-100 grid sm:grid-cols-4 gap-3 items-end">
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Add a document</label>
+                        <input type="text" name="docName" required class="form-input" placeholder="e.g. Builder NOC, Form 26AS"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select">
+                            <option th:each="c : ${docCategories}" th:value="${c.name()}" th:text="${c.label}"
+                                    th:selected="${c.name() == 'OTHER'}">Category</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="mandatory" value="true" data-no-marker class="rounded"/> Mandatory
+                        </label>
+                        <button type="submit" class="btn btn-outline ml-auto"><i class="bi bi-plus-lg"></i> Add</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Disbursements -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-bold">Disbursements</h3>
+                    <span class="badge badge-slate" th:text="${disbursements.size()} + ' tranche(s)'">0</span>
+                </div>
+                <p th:if="${disbursements.isEmpty()}" class="text-sm text-slate-400">Nothing disbursed yet. Record each tranche as the lender releases it.</p>
+                <div th:unless="${disbursements.isEmpty()}" class="overflow-x-auto -mx-6 px-6">
+                    <table class="w-full">
+                        <thead class="table-head"><tr><th>#</th><th>Date</th><th class="text-right">Amount</th><th>Paid to</th><th>Reference</th><th>Remarks</th></tr></thead>
+                        <tbody>
+                        <tr th:each="x : ${disbursements}" class="table-row">
+                            <td class="text-slate-500" th:text="${x.trancheNo} ?: '—'">1</td>
+                            <td class="whitespace-nowrap" th:text="${x.disbursedOn != null} ? ${#temporals.format(x.disbursedOn,'dd MMM yyyy')} : '—'">date</td>
+                            <td class="text-right font-semibold whitespace-nowrap" th:text="'₹' + ${fmt.inr(x.amount)}">₹0</td>
+                            <td th:text="${x.paidTo} ?: '—'">—</td>
+                            <td class="text-sm text-slate-600" th:text="${x.reference} ?: '—'">—</td>
+                            <td class="text-sm text-slate-500" th:text="${x.remarks} ?: ''"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card p-6">
+                <h3 class="font-display font-bold mb-4">File timeline</h3>
+                <p th:if="${events.isEmpty()}" class="text-sm text-slate-400">No activity yet. Stage moves, bank queries and notes will appear here.</p>
+                <div th:unless="${events.isEmpty()}" class="timeline space-y-5">
+                    <div th:each="ev : ${events}" class="relative">
+                        <span class="timeline-dot" style="top:.2rem"></span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <i th:class="'bi ' + ${ev.icon} + ' text-brand-600'"></i>
+                            <span class="text-sm font-semibold" th:text="${ev.title}">Note</span>
+                            <span th:if="${ev.eventType == 'BANK_QUERY'}" class="badge badge-amber">Bank query</span>
+                            <span class="text-xs text-slate-400" th:if="${ev.createdAt}" th:text="${#temporals.format(ev.createdAt,'dd MMM yyyy, HH:mm')}">date</span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1" th:if="${ev.remarks}" th:text="${ev.remarks}">remarks</p>
+                        <p class="text-xs text-slate-400 mt-1" th:text="${ev.userName} ?: 'System'">user</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= Right column ================= -->
+        <div class="space-y-6">
+
+            <!-- Customer -->
+            <div class="card p-5">
+                <h3 class="font-display font-bold mb-4">Customer</h3>
+                <div th:if="${customer != null}">
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-sm font-semibold"
+                             th:text="${customer.initials}">CU</div>
+                        <div class="min-w-0">
+                            <a th:href="@{'/customers/' + ${enc.encode(customer.id)}}" class="font-semibold hover:text-brand-700" th:text="${customer.name}">Name</a>
+                            <p class="text-xs text-slate-400" th:text="${customer.code}">CUS-0001</p>
+                        </div>
+                    </div>
+                    <dl class="mt-4 space-y-2 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Mobile</dt><dd class="font-medium" th:text="${customer.mobile} ?: '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Employment</dt><dd class="font-medium text-right" th:text="${customer.employmentLabel}">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Monthly income</dt>
+                            <dd class="font-medium" th:text="${customer.monthlyIncome != null} ? '₹' + ${fmt.inr(customer.monthlyIncome)} : '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">Existing EMI</dt>
+                            <dd class="font-medium" th:text="${customer.existingEmi != null} ? '₹' + ${fmt.inr(customer.existingEmi)} : '—'">—</dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">CIBIL</dt>
+                            <dd><span th:if="${customer.cibilScore != null}" class="badge" th:classappend="'badge-' + ${customer.cibilTone}" th:text="${customer.cibilScore}">750</span>
+                                <span th:if="${customer.cibilScore == null}" class="text-slate-400">Not checked</span></dd></div>
+                        <div class="flex justify-between gap-3"><dt class="text-slate-500">City</dt><dd class="font-medium" th:text="${customer.city} ?: '—'">—</dd></div>
+                    </dl>
+                </div>
+                <p th:if="${customer == null}" class="text-sm text-slate-400" th:text="${app.customerName} + (${app.customerMobile} != null ? ' · ' + ${app.customerMobile} : '')">Customer</p>
+            </div>
+
+            <th:block th:if="${showMoney}">
+                <!-- Bank payouts -->
+                <div class="card p-5">
+                    <h3 class="font-display font-bold mb-1">Bank payout</h3>
+                    <p class="text-xs text-slate-400 mb-4">Raised automatically on each disbursement at the file's payout %.</p>
+                    <p th:if="${bankPayouts.isEmpty()}" class="text-sm text-slate-400">Nothing raised yet.</p>
+                    <div th:unless="${bankPayouts.isEmpty()}" class="space-y-3">
+                        <div th:each="bp : ${bankPayouts}" class="rounded-xl border border-slate-100 p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-sm font-medium" th:text="${bp.lenderName}">Lender</span>
+                                <span class="badge" th:classappend="'badge-' + ${bp.statusTone}" th:text="${bp.statusLabel}">Pending</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500 mt-2">
+                                <span>Expected</span><span class="font-semibold text-slate-700" th:text="'₹' + ${fmt.inr(bp.expectedAmount)}">₹0</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500">
+                                <span>Received</span>
+                                <span class="font-semibold" th:classappend="${bp.mismatch} ? 'text-rose-600' : 'text-emerald-600'"
+                                      th:text="'₹' + ${fmt.inr(bp.receivedAmount)}">₹0</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1" th:if="${bp.disbursedOn}"
+                               th:text="${fmt.pct(bp.payoutPercent)} + ' on ₹' + ${fmt.inr(bp.disbursedAmount)} + ' · ' + ${#temporals.format(bp.disbursedOn,'dd MMM yyyy')}">detail</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referral payouts -->
+                <div class="card p-5">
+                    <h3 class="font-display font-bold mb-1">Referral payout</h3>
+                    <p class="text-xs text-slate-400 mb-4">What we owe the partner who referred this customer.</p>
+                    <p th:if="${referralPayouts.isEmpty()}" class="text-sm text-slate-400">No referral payout on this file.</p>
+                    <div th:unless="${referralPayouts.isEmpty()}" class="space-y-2">
+                        <a th:each="rp : ${referralPayouts}" th:href="@{'/referral-payouts/' + ${enc.encode(rp.id)}}"
+                           class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium truncate" th:text="${rp.partnerName}">Partner</p>
+                                <p class="text-xs text-slate-400" th:text="${rp.code}">RP-0001</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold" th:text="'₹' + ${fmt.inr(rp.netAmount)}">₹0</p>
+                                <span class="badge" th:classappend="'badge-' + ${rp.statusTone}" th:text="${rp.statusLabel}">Due</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Fee receipts -->
+                <div class="card p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-display font-bold">Fees collected</h3>
+                        <a th:href="@{/finance/receipts/new(applicationId=${appTok})}" class="btn btn-outline btn-sm"><i class="bi bi-plus-lg"></i> Record fee</a>
+                    </div>
+                    <p th:if="${receipts.isEmpty()}" class="text-sm text-slate-400">No fees received from the customer on this file.</p>
+                    <div th:unless="${receipts.isEmpty()}" class="space-y-2">
+                        <a th:each="r : ${receipts}" th:href="@{'/finance/receipts/' + ${enc.encode(r.id)}}" class="flex items-center justify-between gap-3 text-sm py-1.5 border-b border-slate-100 last:border-0 hover:text-brand-700">
+                            <div class="min-w-0">
+                                <p class="font-medium truncate" th:text="${r.feeTypeLabel}">Login fee</p>
+                                <p class="text-xs text-slate-400">
+                                    <span th:text="${r.receiptNo}">RC-0001</span>
+                                    <span th:if="${r.receivedOn}" th:text="' · ' + ${#temporals.format(r.receivedOn,'dd MMM yyyy')}"></span>
+                                </p>
+                            </div>
+                            <span class="font-semibold whitespace-nowrap" th:text="'₹' + ${fmt.inr(r.amount)}">₹0</span>
+                        </a>
+                    </div>
+                </div>
+            </th:block>
+
+            <div th:replace="~{fragments/ui :: audit(trail=${auditTrail})}"></div>
+        </div>
+    </div>
+</th:block>
+</div>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{fragments/layout}">
+<head><title>Roles &amp; Permissions</title></head>
+<body>
+<div layout:fragment="page-title">Roles &amp; Permissions</div>
+<div layout:fragment="content">
+
+    <!-- Banner -->
+    <div class="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 mb-5 flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-white/10 grid place-items-center shrink-0"><i class="bi bi-shield-lock text-2xl"></i></div>
+        <div>
+            <h2 class="font-display font-extrabold text-2xl">Roles &amp; Permissions</h2>
+            <p class="text-white/70 text-sm">Tick what each role may do on each screen.</p>
+        </div>
+    </div>
+
+    <div class="rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 mb-5 flex items-start gap-2">
+        <i class="bi bi-info-circle mt-0.5"></i>
+        <span><b>Super Admin (Owner)</b> always has every permission and cannot be restricted — that is what stops an
+            administrator locking everyone out of the system.</span>
+    </div>
+
+    <!-- Role tabs -->
+    <div class="flex flex-wrap gap-2 mb-5">
+        <a th:each="r : ${roles}" th:href="@{/admin/roles(role=${r.name()})}"
+           th:text="${r.label}"
+           th:classappend="${selectedRole.name() == r.name()} ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+           class="px-4 py-2 rounded-full text-sm font-semibold border transition">Role</a>
+    </div>
+
+    <form th:action="@{/admin/roles/save}" method="post" id="permForm">
+        <input type="hidden" name="role" th:value="${selectedRole.name()}"/>
+
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px]">
+                    <thead class="table-head">
+                    <tr>
+                        <th class="sticky left-0 bg-slate-50 z-10">Module</th>
+                        <th th:each="a : ${actions}" th:text="${a.label}" class="text-center">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${modules}" class="table-row">
+                        <td class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                            <span class="inline-flex items-center gap-2"><i th:class="'bi ' + ${m.icon} + ' text-slate-400'"></i>
+                                <span th:text="${m.label}">Module</span></span>
+                        </td>
+                        <td th:each="a : ${actions}" class="text-center">
+                            <input type="checkbox" name="p" th:value="${m.key + ':' + a.name()}"
+                                   th:checked="${isSuperAdmin or matrix.get(m.key).get(a)}"
+                                   th:disabled="${isSuperAdmin}"
+                                   class="perm-box h-4 w-4 rounded border-slate-300 text-brand-600 align-middle"/>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 mt-5">
+            <button type="submit" th:disabled="${isSuperAdmin}"
+                    th:classappend="${isSuperAdmin} ? 'opacity-50 cursor-not-allowed' : ''"
+                    class="btn btn-primary"><i class="bi bi-check-lg"></i>
+                Save <span th:text="${selectedRole.label}">role</span> permissions</button>
+            <button type="button" id="tickAll" th:unless="${isSuperAdmin}" class="btn btn-outline">Tick all</button>
+            <button type="button" id="untickAll" th:unless="${isSuperAdmin}" class="btn btn-outline">Untick all</button>
+        </div>
+    </form>
+</div>
+<th:block layout:fragment="scripts">
+    <script>
+        (function () {
+            function setAll(v) {
+                document.querySelectorAll('.perm-box:not([disabled])').forEach(function (b) { b.checked = v; });
+            }
+            var t = document.getElementById('tickAll'), u = document.getElementById('untickAll');
+            if (t) t.addEventListener('click', function () { setAll(true); });
+            if (u) u.addEventListener('click', function () { setAll(false); });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

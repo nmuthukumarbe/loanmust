@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Employees</title></head>
+<body>
+<div layout:fragment="page-title">Employees</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Employees</h2>
+            <p class="text-sm text-slate-500">Office staff — data entry, sales, processing and accounts. Link a sign-in to track their output.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:if="${perms == null or perms.canView('attendance')}" th:href="@{/attendance}" class="btn btn-outline"><i class="bi bi-calendar-check"></i> Attendance</a>
+            <a th:if="${perms == null or perms.canAdd('employees')}" th:href="@{/employees/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add employee</a>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <th:block th:if="${employees.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-person-vcard', title='No employees yet', hint='Add your staff to mark daily attendance and see the monthly register.')}"></div></th:block>
+
+        <div th:unless="${employees.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Employee</th><th>Designation</th><th>Department</th><th>Mobile</th><th>Joined</th>
+                    <th class="text-right">Monthly salary</th><th>Sign-in</th><th>Status</th><th class="text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${employees}" class="table-row cursor-pointer" th:data-href="@{'/employees/' + ${enc.encode(e.id)} + '/edit'}">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold"
+                                 th:text="${e.initials}">EM</div>
+                            <div class="min-w-0">
+                                <p class="font-semibold truncate" th:text="${e.name}">Name</p>
+                                <p class="text-xs text-slate-400" th:text="${e.code}">EMP-0001</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-sm" th:text="${e.designation} ?: '—'">Designation</td>
+                    <td><span th:if="${e.department}" class="badge badge-indigo" th:text="${e.department}">Data Entry</span>
+                        <span th:unless="${e.department}" class="text-slate-300">—</span></td>
+                    <td class="whitespace-nowrap" th:text="${e.mobile} ?: '—'">mobile</td>
+                    <td class="whitespace-nowrap text-sm" th:text="${e.joiningDate != null} ? ${#temporals.format(e.joiningDate,'dd MMM yyyy')} : '—'">date</td>
+                    <td class="text-right whitespace-nowrap"
+                        th:text="${e.monthlySalary != null} ? '₹' + ${fmt.inr(e.monthlySalary)} : '—'">₹0</td>
+                    <td class="text-xs whitespace-nowrap">
+                        <span th:if="${e.userId != null}" class="text-emerald-700"><i class="bi bi-person-check-fill"></i> Linked</span>
+                        <span th:if="${e.userId == null}" class="text-slate-400">No sign-in</span>
+                    </td>
+                    <td><span class="badge" th:classappend="${e.active} ? 'badge-emerald' : 'badge-slate'" th:text="${e.active} ? 'Active' : 'Inactive'">Active</span></td>
+                    <td class="text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1">
+                            <a th:if="${perms == null or perms.canEdit('employees')}" th:href="@{'/employees/' + ${enc.encode(e.id)} + '/edit'}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <form th:if="${perms == null or perms.canDelete('employees')}" th:action="@{'/employees/' + ${enc.encode(e.id)} + '/archive'}" method="post" class="js-action inline"
+                                  data-confirm="Archive this employee? Their attendance history is kept.">
+                                <button type="submit" class="inline-grid place-items-center h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50" title="Archive"><i class="bi bi-archive"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

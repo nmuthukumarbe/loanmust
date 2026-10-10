@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${project.id == null} ? 'Add project' : 'Edit project'">Project</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${project.id == null} ? 'Add project' : 'Edit project'">Project</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Builders', parentUrl='/builders', current=${builder != null ? builder.name : 'Project'})}"></div>
+
+        <form th:action="@{/builders/projects/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${project.id}"/>
+            <input type="hidden" name="builderId" th:value="${project.builderId}"/>
+
+            <div>
+                <h3 class="font-display font-bold mb-1" th:text="${project.id == null} ? 'New project' : ${project.name}">Project</h3>
+                <p class="text-sm text-slate-500 mb-4" th:if="${builder != null}" th:text="'by ' + ${builder.name}">by Builder</p>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Project name</label>
+                        <input type="text" name="name" th:value="${project.name}" required class="form-input" placeholder="e.g. Ganesh Heights Phase 2"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" th:value="${project.location}" class="form-input" placeholder="Locality / landmark"/>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${project.city}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">RERA number</label>
+                        <input type="text" name="reraNumber" th:value="${project.reraNumber}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Project type</label>
+                        <select name="projectType" class="form-select">
+                            <option value="">Not set</option>
+                            <option value="Apartment" th:selected="${project.projectType == 'Apartment'}">Apartment</option>
+                            <option value="Villa" th:selected="${project.projectType == 'Villa'}">Villa</option>
+                            <option value="Row house" th:selected="${project.projectType == 'Row house'}">Row house</option>
+                            <option value="Plot" th:selected="${project.projectType == 'Plot'}">Plot</option>
+                            <option value="Commercial" th:selected="${project.projectType == 'Commercial'}">Commercial</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                                    th:selected="${project.status != null and project.status.name() == s.name()}">Status</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Total units</label>
+                        <input type="number" step="1" min="0" name="totalUnits" th:value="${project.totalUnits}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Price from (₹)</label>
+                        <input type="number" step="1" min="0" name="priceFrom" th:value="${project.priceFrom}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Price to (₹)</label>
+                        <input type="number" step="1" min="0" name="priceTo" th:value="${project.priceTo}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Possession date</label>
+                        <input type="date" name="possessionDate" th:value="${project.possessionDate}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Approved lenders (APF)</h3>
+                <p class="text-xs text-slate-400 mb-4">Tick every lender that has approved this project. Buyers here get quicker legal and technical clearance with them.</p>
+                <p th:if="${lenders.isEmpty()}" class="text-sm text-slate-400">Add lenders under Banks &amp; Rates first.</p>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <label th:each="l : ${lenders}" class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                        <input type="checkbox" name="approvedLender" th:value="${l.displayName}" data-no-marker class="rounded"
+                               th:checked="${project.approvedLenderList.contains(l.displayName)}"/>
+                        <span th:text="${l.displayName}">Lender</span>
+                    </label>
+                    <!-- Keep approvals for lenders no longer active so an edit does not silently drop them -->
+                    <label th:each="name : ${project.approvedLenderList}" th:unless="${lenders.![displayName].contains(name)}"
+                           class="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm cursor-pointer text-slate-500">
+                        <input type="checkbox" name="approvedLender" th:value="${name}" checked data-no-marker class="rounded"/>
+                        <span th:text="${name} + ' (inactive)'">Lender</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" rows="3" class="form-textarea" th:text="${project.notes}"
+                          placeholder="Payment plan, tower-wise possession, builder subvention offers…"></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save project</button>
+                <a th:if="${builder != null}" th:href="@{'/builders/' + ${enc.encode(builder.id)}}" class="btn btn-outline">Cancel</a>
+                <a th:if="${builder == null}" th:href="@{/builders}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

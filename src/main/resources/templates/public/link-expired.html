@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="noindex, nofollow"/>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
+    <title>Link no longer active</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: {
+            fontFamily: { display: ['"Plus Jakarta Sans"','sans-serif'], sans: ['Inter','sans-serif'] },
+            colors: { canvas:'#F4F6FB', ink:'#0F172A', brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' } }
+        } } };
+    </script>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="font-sans bg-canvas text-ink antialiased min-h-screen grid place-items-center px-4 py-10">
+
+<main class="w-full max-w-md text-center">
+    <div class="card p-6 sm:p-8">
+        <div class="h-16 w-16 mx-auto rounded-full bg-slate-100 text-slate-500 grid place-items-center text-3xl">
+            <i class="bi bi-link-45deg"></i>
+        </div>
+        <h1 class="font-display font-extrabold text-2xl mt-5">This link is no longer active</h1>
+        <p class="text-slate-600 mt-2">
+            The page you opened may have been withdrawn, replaced with a newer version, or the address may be incomplete.
+        </p>
+        <div class="mt-6 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600 text-left">
+            <p class="font-semibold text-slate-700 mb-1">What you can do</p>
+            <ul class="space-y-1 text-xs">
+                <li class="flex gap-2"><i class="bi bi-check2 text-brand-600"></i> Check that the full link was copied from the message.</li>
+                <li class="flex gap-2"><i class="bi bi-check2 text-brand-600"></i> Ask the person who sent it for a fresh link - loan rates change, so comparisons are refreshed regularly.</li>
+            </ul>
+        </div>
+    </div>
+    <p class="text-xs text-slate-400 mt-6">Your details are safe - nothing is shown on an inactive link.</p>
+</main>
+</body>
+</html>

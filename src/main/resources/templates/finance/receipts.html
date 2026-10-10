@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Fee Receipts</title></head>
+<body>
+<div layout:fragment="page-title">Fee Receipts</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Fee receipts</h2>
+            <p class="text-sm text-slate-500">Service fees collected directly from customers — separate from bank payouts.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/finance}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Finance</a>
+            <a th:if="${perms == null or perms.canAdd('finance')}" th:href="@{/finance/receipts/new}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Record fee</a>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/finance/receipts}" method="get" data-live-search class="flex flex-wrap items-end gap-2 mb-4">
+            <div class="relative flex-1 min-w-[16rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search receipt no, customer, file or reference…" class="form-input w-full pl-9"/>
+            </div>
+            <div>
+                <label class="form-label">From</label>
+                <input type="date" name="from" th:value="${from}" class="form-input"/>
+            </div>
+            <div>
+                <label class="form-label">To</label>
+                <input type="date" name="to" th:value="${to}" class="form-input"/>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            <a th:href="@{/finance/receipts}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${receiptPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-receipt', title='No receipts found', hint='Record a fee when a customer pays you for login, MODD, legal or valuation work.')}"></div></th:block>
+
+        <div th:unless="${receiptPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr><th>Receipt</th><th>Date</th><th>Customer</th><th>File</th><th>Fee type</th>
+                    <th class="text-right">Amount</th><th>Mode</th><th>Reference</th><th class="text-right">Actions</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${receiptPage.content}" class="table-row cursor-pointer" th:data-href="@{'/finance/receipts/' + ${enc.encode(r.id)}}">
+                    <td class="font-semibold whitespace-nowrap" th:text="${r.receiptNo}">FR-0001</td>
+                    <td class="whitespace-nowrap text-sm" th:text="${r.receivedOn != null} ? ${#temporals.format(r.receivedOn,'dd MMM yyyy')} : '—'">date</td>
+                    <td><p class="font-medium" th:text="${r.customerName}">Customer</p>
+                        <p class="text-xs text-slate-400" th:text="${r.customerMobile}">mobile</p></td>
+                    <td class="text-sm whitespace-nowrap">
+                        <a th:if="${r.applicationId != null}" th:href="@{'/applications/' + ${enc.encode(r.applicationId)}}"
+                           class="hover:text-brand-700" th:text="${r.applicationCode}">LF-0001</a>
+                        <span th:if="${r.applicationId == null}" class="text-slate-300">—</span>
+                    </td>
+                    <td class="text-sm text-slate-600" th:text="${r.feeTypeLabel}">Login fee</td>
+                    <td class="text-right font-semibold whitespace-nowrap" th:text="'₹' + ${fmt.inr(r.amount)}">₹0</td>
+                    <td class="text-xs text-slate-500" th:text="${r.paymentMode != null} ? ${r.paymentMode.label} : '—'">UPI</td>
+                    <td class="text-xs text-slate-500" th:text="${r.reference} ?: '—'">ref</td>
+                    <td class="text-right whitespace-nowrap">
+                        <a th:href="@{'/finance/receipts/' + ${enc.encode(r.id)}}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="View / print"><i class="bi bi-printer"></i></a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${receiptPage}, base='/finance/receipts')}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title>Proposals</title></head>
+<body>
+<div layout:fragment="page-title">Proposals</div>
+
+<div layout:fragment="content">
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+            <h2 class="font-display font-bold text-xl">Saved proposals</h2>
+            <p class="text-sm text-slate-500">Bank comparisons shared with customers - see who opened theirs and follow up while it is fresh.</p>
+        </div>
+        <div class="flex gap-2">
+            <a th:href="@{/advisor}" class="btn btn-primary"><i class="bi bi-bank"></i> New comparison</a>
+        </div>
+    </div>
+
+    <div class="card p-5">
+        <form th:action="@{/advisor/proposals}" method="get" data-live-search class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[14rem]">
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="search" name="q" th:value="${q}" autocomplete="off"
+                       placeholder="Search code, customer name, mobile or bank…" class="form-input w-full pl-9"/>
+            </div>
+            <a th:href="@{/advisor/proposals}" class="btn btn-ghost">Reset</a>
+        </form>
+
+        <th:block th:if="${proposalPage.isEmpty()}"><div th:replace="~{fragments/ui :: empty(icon='bi-collection', title='No proposals yet', hint='Run a comparison in Rate Compare and save it to share with the customer.')}"></div></th:block>
+
+        <div th:unless="${proposalPage.isEmpty()}" class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full">
+                <thead class="table-head">
+                <tr>
+                    <th>Proposal</th><th>Customer</th><th>Loan</th><th>Recommended</th><th class="text-right">EMI</th>
+                    <th class="text-center">Eligible</th><th>Valid until</th><th>Opened</th><th class="text-right"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${proposalPage.content}" class="table-row cursor-pointer" th:data-href="@{'/advisor/proposals/' + ${enc.encode(p.id)}}">
+                    <td>
+                        <p class="font-semibold" th:text="${p.code}">PR-0001</p>
+                        <p class="text-xs text-slate-400" th:if="${p.createdAt}" th:text="${#temporals.format(p.createdAt,'dd MMM yyyy')}">date</p>
+                    </td>
+                    <td>
+                        <p class="font-medium" th:text="${p.customerName} ?: 'Walk-in enquiry'">Name</p>
+                        <p class="text-xs text-slate-400" th:if="${p.customerMobile}" th:text="${p.customerMobile}">mobile</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <p th:text="${p.loanTypeLabel}">Home loan</p>
+                        <p class="text-xs text-slate-400" th:text="'₹' + ${fmt.lakhs(p.loanAmount)} + (${p.tenureYears} != null ? ' · ' + ${p.tenureYears} + ' yrs' : '')">₹45 L</p>
+                    </td>
+                    <td>
+                        <th:block th:if="${p.recommendedLenderName}">
+                            <p class="font-medium" th:text="${p.recommendedLenderName}">Bank</p>
+                            <p class="text-xs text-slate-400" th:text="${fmt.pct(p.recommendedRate)}">8.5%</p>
+                        </th:block>
+                        <span th:unless="${p.recommendedLenderName}" class="text-slate-400 text-sm">None eligible</span>
+                    </td>
+                    <td class="text-right whitespace-nowrap" th:text="${p.recommendedEmi != null} ? '₹' + ${fmt.inr(p.recommendedEmi)} : '—'">₹0</td>
+                    <td class="text-center" th:text="${p.eligibleCount} ?: 0">0</td>
+                    <td class="whitespace-nowrap">
+                        <span th:if="${p.validUntil}" th:text="${#temporals.format(p.validUntil,'dd MMM yyyy')}">date</span>
+                        <span th:if="${p.expired}" class="badge badge-rose ml-1">Expired</span>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <span th:if="${p.viewCount != null and p.viewCount > 0}" class="badge badge-emerald"
+                              th:title="${p.lastViewedAt != null} ? 'Last opened ' + ${#temporals.format(p.lastViewedAt,'dd MMM, HH:mm')} : ''"
+                              th:text="${p.viewCount} + (${p.viewCount == 1} ? ' time' : ' times')">2 times</span>
+                        <span th:unless="${p.viewCount != null and p.viewCount > 0}" class="text-xs text-slate-400">Not yet</span>
+                    </td>
+                    <td class="text-right">
+                        <a th:href="@{'/advisor/proposals/' + ${enc.encode(p.id)}}" class="js-action inline-grid place-items-center h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100" title="Open"><i class="bi bi-arrow-right"></i></a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:replace="~{fragments/ui :: pager(page=${proposalPage}, base='/advisor/proposals')}"></div>
+    </div>
+</div>
+</body>
+</html>

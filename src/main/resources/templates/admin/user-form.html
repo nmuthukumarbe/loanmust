@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{fragments/layout}">
+<head><title th:text="${user.id == null} ? 'Add user' : 'Edit user'">User</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${user.id == null} ? 'Add user' : 'Edit user'">User</div>
+<div layout:fragment="content">
+    <div class="max-w-3xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Users', parentUrl='/admin/users', current=${user.id == null} ? 'New user' : ${user.fullName})}"></div>
+        <form th:action="@{/admin/users/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${user.id}"/>
+            <div class="grid sm:grid-cols-2 gap-5">
+                <div><label class="form-label">Full name</label>
+                    <input type="text" name="fullName" th:value="${user.fullName}" required class="form-input"/></div>
+                <div><label class="form-label">Email <span class="text-slate-400 font-normal">(sign-in)</span></label>
+                    <input type="email" name="email" th:value="${user.email}" required class="form-input"/></div>
+                <div><label class="form-label">Phone</label>
+                    <input type="tel" name="phone" th:value="${user.phone}" class="form-input"/></div>
+                <div><label class="form-label">Designation</label>
+                    <input type="text" name="designation" th:value="${user.designation}" class="form-input"/></div>
+                <div><label class="form-label">Branch</label>
+                    <input type="text" name="branch" th:value="${user.branch}" class="form-input"/></div>
+                <div><label class="form-label">Role</label>
+                    <select name="role" class="form-select">
+                        <option th:each="r : ${roles}" th:value="${r.name()}" th:text="${r.label}"
+                                th:selected="${user.role != null and user.role.name() == r.name()}">Role</option>
+                    </select></div>
+                <div class="sm:col-span-2">
+                    <label class="form-label" th:text="${user.id == null} ? 'Temporary password' : 'Reset password (leave blank to keep)'">Password</label>
+                    <input type="text" name="password" class="form-input"
+                           th:placeholder="${user.id == null} ? 'Defaults to welcome123' : 'Leave blank to keep the current password'"/>
+                    <p class="text-xs text-slate-400 mt-1">
+                        The user must change this the first time they sign in.
+                    </p>
+                </div>
+                <div class="sm:col-span-2 flex flex-wrap gap-6">
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="enabled" value="true" th:checked="${user.enabled}"
+                               class="h-4 w-4 rounded border-slate-300 text-brand-600"/><input type="hidden" name="_enabled" value="on"/> Account active
+                    </label>
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="loginEnabled" value="true" th:checked="${user.loginEnabled}"
+                               class="h-4 w-4 rounded border-slate-300 text-brand-600"/><input type="hidden" name="_loginEnabled" value="on"/> Allowed to sign in
+                    </label>
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-500">
+                <p class="font-semibold text-slate-600 mb-1">What each role can do</p>
+                <p><b>Owner / Admin</b> — everything, including settings, users and the audit log.</p>
+                <p><b>Manager</b> — every lead, file and MODD across the team; approves referral payouts.</p>
+                <p><b>Loan Executive</b> — field sales; only the leads and loan files assigned to them.</p>
+                <p><b>Processing</b> — documents, bank login, sanction, MODD and disbursement tracking.</p>
+                <p><b>Data Entry</b> — captures leads, customers and documents; no money screens.</p>
+                <p><b>Finance</b> — bank payouts, referral payouts, fee receipts.</p>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save user</button>
+                <a th:href="@{/admin/users}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

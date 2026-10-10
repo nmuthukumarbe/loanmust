@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${customer.id == null} ? 'Add customer' : 'Edit customer'">Customer</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${customer.id == null} ? 'Add customer' : 'Edit customer'">Customer</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Customers', parentUrl='/customers', current=${customer.id == null} ? 'New customer' : ${customer.name})}"></div>
+
+        <form th:action="@{/customers/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${customer.id}"/>
+
+            <!-- Personal -->
+            <div>
+                <h3 class="font-display font-bold mb-4">Personal details</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Full name <span class="text-slate-400 font-normal">(as on PAN)</span></label>
+                        <input type="text" name="name" th:value="${customer.name}" required maxlength="120" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='mobile', value=${customer.mobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">Alternate mobile <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="tel" name="alternateMobile" th:value="${customer.alternateMobile}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" th:value="${customer.email}" class="form-input" placeholder="name@example.com"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Date of birth</label>
+                        <input type="date" name="dateOfBirth" th:value="${customer.dateOfBirth}" class="form-input"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Age decides the maximum tenure banks will allow.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-select">
+                            <option value="">Not stated</option>
+                            <option th:each="g : ${genders}" th:value="${g.name()}" th:text="${g.label}"
+                                    th:selected="${customer.gender != null and customer.gender.name() == g.name()}">Gender</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">Several banks give women borrowers a small rate concession.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">PAN</label>
+                        <input type="text" name="pan" th:value="${customer.pan}" maxlength="10" class="form-input uppercase"
+                               pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]" placeholder="ABCDE1234F"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Aadhaar (last 4 digits)</label>
+                        <input type="text" name="aadhaarLast4" th:value="${customer.aadhaarLast4}" maxlength="4" inputmode="numeric"
+                               pattern="[0-9]{4}" class="form-input" placeholder="1234"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Only the last 4 digits are stored.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Address</h3>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div class="sm:col-span-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" rows="2" class="form-textarea" th:text="${customer.address}"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" th:value="${customer.city}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">State</label>
+                        <input type="text" name="state" th:value="${customer.state}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">PIN code</label>
+                        <input type="text" name="pincode" th:value="${customer.pincode}" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credit profile -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Credit profile</h3>
+                <p class="text-xs text-slate-400 mb-4">Used by Rate Compare to work out FOIR, eligibility and the best bank.</p>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">Employment</label>
+                        <select name="employmentType" class="form-select">
+                            <option value="">Not known</option>
+                            <option th:each="e : ${employmentTypes}" th:value="${e.name()}" th:text="${e.label}"
+                                    th:selected="${customer.employmentType != null and customer.employmentType.name() == e.name()}">Salaried</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Employer / business name</label>
+                        <input type="text" name="employerName" th:value="${customer.employerName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Work experience (years)</label>
+                        <input type="number" step="1" min="0" max="60" name="workExperienceYears" th:value="${customer.workExperienceYears}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Net monthly income (₹)</label>
+                        <input type="number" step="1" min="0" name="monthlyIncome" th:value="${customer.monthlyIncome}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Existing EMIs (₹ / month)</label>
+                        <input type="number" step="1" min="0" name="existingEmi" th:value="${customer.existingEmi}" class="form-input" placeholder="0"/>
+                    </div>
+                    <div>
+                        <label class="form-label">CIBIL score</label>
+                        <input type="number" step="1" min="300" max="900" name="cibilScore" th:value="${customer.cibilScore}" class="form-input" placeholder="300 – 900"/>
+                    </div>
+                    <div>
+                        <label class="form-label">CIBIL checked on</label>
+                        <input type="date" name="cibilCheckedOn" th:value="${customer.cibilCheckedOn}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationship -->
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Relationship</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Relationship owner</label>
+                        <select name="ownerUserId" class="form-select">
+                            <option value="">Unassigned</option>
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' — ' + ${u.roleLabel}"
+                                    th:selected="${customer.ownerUserId != null and customer.ownerUserId == u.id}">User</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Referral partner</label>
+                        <select name="referralPartnerId" class="form-select">
+                            <option value="">None (direct)</option>
+                            <option th:each="r : ${partners}" th:value="${r.id}" th:text="${r.name} + ' (' + ${r.code} + ')'"
+                                    th:selected="${customer.referralPartnerId != null and customer.referralPartnerId == r.id}">Partner</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">The partner is paid automatically when this customer's loan disburses.</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" rows="3" class="form-textarea" th:text="${customer.notes}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save customer</button>
+                <a th:href="${customer.id == null} ? @{/customers} : @{'/customers/' + ${enc.encode(customer.id)}}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

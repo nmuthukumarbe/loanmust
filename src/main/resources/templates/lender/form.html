@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head><title th:text="${lender.id == null} ? 'Add lender' : 'Edit lender'">Lender</title></head>
+<body>
+<div layout:fragment="page-title" th:text="${lender.id == null} ? 'Add lender' : 'Edit lender'">Lender</div>
+
+<div layout:fragment="content">
+    <div class="max-w-4xl">
+        <div th:replace="~{fragments/ui :: crumbs(parent='Banks &amp; Rates', parentUrl='/lenders', current=${lender.id == null ? 'New lender' : lender.displayName})}"></div>
+
+        <form th:action="@{/lenders/save}" method="post" class="card p-6 space-y-6">
+            <input type="hidden" name="id" th:value="${lender.id}"/>
+
+            <div>
+                <h3 class="font-display font-bold mb-4">Lender</h3>
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">Full name</label>
+                        <input type="text" name="name" th:value="${lender.name}" required class="form-input" placeholder="e.g. State Bank of India"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Short name</label>
+                        <input type="text" name="shortName" th:value="${lender.shortName}" class="form-input" placeholder="e.g. SBI"/>
+                        <p class="text-[11px] text-slate-400 mt-1">Shown on the rate card, proposals and loan files.</p>
+                    </div>
+                    <div>
+                        <label class="form-label">Lender type</label>
+                        <select name="lenderType" class="form-select">
+                            <option th:each="t : ${lenderTypes}" th:value="${t.name()}" th:text="${t.label}"
+                                    th:selected="${lender.lenderType != null and lender.lenderType.name() == t.name()}">Type</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Brand colour</label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" name="brandColor" th:value="${lender.brandColor}" class="h-10 w-16 rounded-lg border border-slate-200 bg-transparent p-1 cursor-pointer"/>
+                            <span class="text-xs text-slate-400">Used for the lender's badge.</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Branch</label>
+                        <input type="text" name="branch" th:value="${lender.branch}" class="form-input" placeholder="Branch / RACPC / hub we log in at"/>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium pb-2.5">
+                            <input type="checkbox" name="active" value="true" th:checked="${lender.active}" class="rounded"/>
+                            <input type="hidden" name="_active" value="on"/>
+                            Active - we place files with this lender
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-4">Relationship manager</h3>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div>
+                        <label class="form-label">RM name</label>
+                        <input type="text" name="rmName" th:value="${lender.rmName}" class="form-input"/>
+                    </div>
+                    <div>
+                        <label class="form-label">RM mobile</label>
+                        <div th:replace="~{fragments/ui :: phone(name='rmMobile', value=${lender.rmMobile})}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label">RM email</label>
+                        <input type="email" name="rmEmail" th:value="${lender.rmEmail}" class="form-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="font-display font-bold mb-1">Our payout</h3>
+                <p class="text-xs text-slate-400 mb-4">The default the lender pays us on disbursal. A scheme can override it.</p>
+                <div class="grid sm:grid-cols-3 gap-5">
+                    <div th:if="${canSeeMoney}">
+                        <label class="form-label">Payout %</label>
+                        <input type="number" step="0.01" min="0" name="payoutPercent" th:value="${lender.payoutPercent}" class="form-input" placeholder="e.g. 0.50"/>
+                    </div>
+                    <input th:unless="${canSeeMoney}" type="hidden" name="payoutPercent" th:value="${lender.payoutPercent}"/>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Payout terms</label>
+                        <input type="text" name="payoutTerms" th:value="${lender.payoutTerms}" class="form-input"
+                               placeholder="e.g. Paid monthly on invoice, slab bonus above ₹5 Cr"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" rows="3" class="form-textarea" th:text="${lender.notes}"></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save lender</button>
+                <a th:href="@{/lenders}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

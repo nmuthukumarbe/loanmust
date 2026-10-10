@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
+    <title layout:title-pattern="$CONTENT_TITLE · Loanmust">Loanmust</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+
+    <!-- Apply the saved light/dark/system theme before first paint to avoid a flash. -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('ni-theme') || 'system';
+                var mql = window.matchMedia('(prefers-color-scheme: dark)');
+                var dark = t === 'dark' || (t === 'system' && mql.matches);
+                document.documentElement.classList.toggle('dark', dark);
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script th:inline="javascript">
+        /*[# th:with="p=${brandPalette}"]*/
+        var __brand = {
+            50:  /*[[${p['50']}]]*/  '#eef2ff', 100: /*[[${p['100']}]]*/ '#e0e7ff',
+            200: /*[[${p['200']}]]*/ '#c7d2fe', 300: /*[[${p['300']}]]*/ '#a5b4fc',
+            400: /*[[${p['400']}]]*/ '#818cf8', 500: /*[[${p['500']}]]*/ '#6366f1',
+            600: /*[[${p['600']}]]*/ '#4f46e5', 700: /*[[${p['700']}]]*/ '#4338ca',
+            800: /*[[${p['800']}]]*/ '#3730a3', 900: /*[[${p['900']}]]*/ '#312e81'
+        };
+        /*[/]*/
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        canvas: '#F4F6FB',
+                        ink: '#0F172A',
+                        brand: __brand,
+                    },
+                    boxShadow: {
+                        card: '0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.06)',
+                    },
+                },
+            },
+        };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+
+    <!-- Re-point the CSS component variables at the chosen accent ramp.
+         Placed AFTER app.css so it overrides the default indigo :root ramp. -->
+    <style th:inline="text">:root{
+        --brand-50:[[${brandPalette['50']}]];--brand-100:[[${brandPalette['100']}]];
+        --brand-200:[[${brandPalette['200']}]];--brand-300:[[${brandPalette['300']}]];
+        --brand-400:[[${brandPalette['400']}]];--brand-500:[[${brandPalette['500']}]];
+        --brand-600:[[${brandPalette['600']}]];--brand-700:[[${brandPalette['700']}]];
+        --brand-800:[[${brandPalette['800']}]];--brand-900:[[${brandPalette['900']}]];
+    }</style>
+
+    <script th:inline="javascript">window.__CUR__ = /*[[${currencySymbol}]]*/ '\u20B9';</script>
+</head>
+<body class="font-sans bg-canvas text-ink antialiased">
+
+<div class="min-h-screen lg:flex">
+
+    <!-- ===== Sidebar ===== -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col
+                  -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out">
+        <div class="h-16 flex items-center gap-2.5 px-5 border-b border-slate-100">
+            <img th:src="@{/favicon.svg}" alt="" class="h-9 w-9"/>
+            <div class="leading-tight">
+                <p class="font-display font-extrabold text-lg tracking-tight">Loan<span class="text-brand-600">must</span></p>
+                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Loan agent desk</p>
+            </div>
+        </div>
+
+        <div class="px-4 pt-4">
+            <div class="rounded-xl bg-brand-50 border border-brand-100 px-3 py-2.5">
+                <p class="text-[11px] uppercase tracking-wide text-brand-600 font-semibold" th:text="#{menu.agency}">Agency</p>
+                <p class="text-sm font-semibold text-brand-900 truncate" th:text="${currentAgencyName}">Agency</p>
+                <p class="text-[11px] text-brand-600" th:if="${currentAgencyDsaCode}"
+                   th:text="'DSA code ' + ${currentAgencyDsaCode}">DSA</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-0.5" th:with="am=${activeMenu}">
+            <a th:if="${perms == null or perms.canView('dashboard')}" th:href="@{/dashboard}" th:classappend="${am=='dashboard'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-grid-1x2-fill"></i><span th:text="#{menu.dashboard}">Dashboard</span></a>
+
+            <p class="nav-section" th:text="#{menu.section.sales}">Sales</p>
+            <a th:if="${perms == null or perms.canView('leads')}" th:href="@{/leads}" th:classappend="${am=='leads'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-funnel-fill"></i><span th:text="#{menu.leads}">Leads</span></a>
+            <a th:if="${perms == null or perms.canView('customers')}" th:href="@{/customers}" th:classappend="${am=='customers'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-people-fill"></i><span th:text="#{menu.customers}">Customers</span></a>
+            <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor}" th:classappend="${am=='advisor'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-bank"></i><span th:text="#{menu.advisor}">Rate Compare</span></a>
+            <a th:if="${perms == null or perms.canView('lenders')}" th:href="@{/lenders}" th:classappend="${am=='lenders'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-building-columns"></i><span th:text="#{menu.lenders}">Banks &amp; Rates</span></a>
+
+            <p class="nav-section" th:text="#{menu.section.processing}">Loan processing</p>
+            <a th:if="${perms == null or perms.canView('applications')}" th:href="@{/applications}" th:classappend="${am=='applications'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-folder2-open"></i><span th:text="#{menu.applications}">Loan Files</span></a>
+            <a th:if="${perms == null or perms.canView('applications')}" th:href="@{/applications/board}" th:classappend="${am=='pipeline'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-kanban"></i><span th:text="#{menu.pipeline}">Pipeline</span></a>
+            <a th:if="${perms == null or perms.canView('modd')}" th:href="@{/modd}" th:classappend="${am=='modd'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-file-earmark-lock"></i><span th:text="#{menu.modd}">MODD</span></a>
+
+            <p class="nav-section" th:text="#{menu.section.partners}">Partners</p>
+            <a th:if="${perms == null or perms.canView('builders')}" th:href="@{/builders}" th:classappend="${am=='builders'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-buildings"></i><span th:text="#{menu.builders}">Builders</span></a>
+            <a th:if="${perms == null or perms.canView('referrals')}" th:href="@{/referrals}" th:classappend="${am=='referrals'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-people"></i><span th:text="#{menu.referrals}">Referral Partners</span></a>
+
+            <p class="nav-section" th:if="${canSeeMoney}" th:text="#{menu.section.money}">Money</p>
+            <a th:if="${canSeeMoney and (perms == null or perms.canView('referral_payouts'))}" th:href="@{/referral-payouts}" th:classappend="${am=='referral_payouts'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-send-check"></i><span th:text="#{menu.referralPayouts}">Referral Payouts</span></a>
+            <a th:if="${canSeeMoney and (perms == null or perms.canView('commission'))}" th:href="@{/commission}" th:classappend="${am=='commission'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-percent"></i><span th:text="#{menu.commission}">Bank Payouts</span></a>
+            <a th:if="${canSeeMoney and (perms == null or perms.canView('finance'))}" th:href="@{/finance}" th:classappend="${am=='finance'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-receipt"></i><span th:text="#{menu.finance}">Finance &amp; Fees</span></a>
+            <a th:if="${perms == null or perms.canView('reports')}" th:href="@{/reports}" th:classappend="${am=='reports'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-graph-up-arrow"></i><span th:text="#{menu.reports}">Reports</span></a>
+
+            <p class="nav-section" sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:text="#{menu.section.people}">People</p>
+            <a sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:if="${perms == null or perms.canView('employees')}" th:href="@{/employees}" th:classappend="${am=='employees'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-person-vcard"></i><span th:text="#{menu.employees}">Employees</span></a>
+            <a sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:if="${perms == null or perms.canView('attendance')}" th:href="@{/attendance}" th:classappend="${am=='attendance'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-calendar-check"></i><span th:text="#{menu.attendance}">Attendance</span></a>
+
+            <p class="nav-section" th:if="${isAdministrator}" th:text="#{menu.section.admin}">Administration</p>
+            <a th:if="${isAdministrator}" th:href="@{/admin/users}" th:classappend="${am=='admin'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-person-badge"></i><span th:text="#{menu.users}">Users</span></a>
+            <a th:if="${isAdministrator}" th:href="@{/admin/roles}" th:classappend="${am=='roles'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-shield-lock"></i><span th:text="#{menu.roles}">Roles &amp; Permissions</span></a>
+            <a th:if="${isAdministrator}" th:href="@{/audit}" th:classappend="${am=='audit'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-clock-history"></i><span th:text="#{menu.audit}">Audit Log</span></a>
+            <a th:if="${isAdministrator}" th:href="@{/settings}" th:classappend="${am=='settings'} ? 'nav-active' : ''" class="nav-link">
+                <i class="bi bi-gear-fill"></i><span th:text="#{menu.settings}">Settings</span></a>
+        </nav>
+
+        <div class="border-t border-slate-100 p-3">
+            <div class="flex items-center gap-3 px-2 py-2 rounded-xl">
+                <div class="h-9 w-9 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-sm font-semibold"
+                     th:text="${currentUserInitials}">U</div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold truncate" th:text="${currentUserName}">User</p>
+                    <p class="text-[11px] text-slate-400 truncate" th:text="${currentUserRole}">Role</p>
+                </div>
+                <a th:href="@{/account/password}" class="h-9 w-9 grid place-items-center rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition"
+                   th:title="#{account.password}" title="Change password"><i class="bi bi-key"></i></a>
+                <form th:action="@{/logout}" method="post" class="shrink-0">
+                    <button type="submit" th:title="#{menu.signout}" title="Sign out"
+                            class="h-9 w-9 grid place-items-center rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <div id="overlay" class="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm hidden lg:hidden"></div>
+
+    <!-- ===== Main ===== -->
+    <div class="flex-1 lg:pl-72 flex flex-col min-h-screen">
+
+        <header class="sticky top-0 z-20 h-16 bg-canvas/85 backdrop-blur border-b border-slate-200/70 flex items-center gap-3 px-4 lg:px-8">
+            <button id="menuBtn" class="lg:hidden h-10 w-10 grid place-items-center rounded-lg text-slate-600 hover:bg-slate-100">
+                <i class="bi bi-list text-2xl"></i>
+            </button>
+            <div class="flex-1 min-w-0">
+                <h1 class="font-display font-bold text-lg tracking-tight truncate" layout:fragment="page-title">Dashboard</h1>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 text-sm text-slate-500">
+                <i class="bi bi-calendar3"></i>
+                <span th:text="${#temporals.format(#temporals.createNow(),'EEE, dd MMM yyyy')}">Today</span>
+            </div>
+            <!-- Mobile sign-out in the top-right corner (standard). -->
+            <form th:action="@{/logout}" method="post" class="lg:hidden shrink-0">
+                <button type="submit" aria-label="Sign out"
+                        class="h-9 w-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-rose-500 hover:bg-rose-50">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+            <div class="relative" data-theme-menu>
+                <button type="button" data-theme-btn aria-label="Theme"
+                        class="h-9 w-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100">
+                    <i class="bi bi-circle-half"></i>
+                </button>
+                <div data-theme-panel class="hidden absolute right-0 mt-1 w-40 rounded-xl border border-slate-100 bg-white shadow-lg py-1 z-40">
+                    <button type="button" data-theme-set="light" class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                        <i class="bi bi-sun"></i> <span>Light</span></button>
+                    <button type="button" data-theme-set="dark" class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                        <i class="bi bi-moon-stars"></i> <span>Dark</span></button>
+                    <button type="button" data-theme-set="system" class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                        <i class="bi bi-circle-half"></i> <span>System</span></button>
+                </div>
+            </div>
+            <div class="relative" data-lang-menu>
+                <button type="button" data-lang-btn class="h-9 px-2.5 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-100">
+                    <i class="bi bi-translate"></i><span th:text="${#strings.toUpperCase(currentLang)}">EN</span><i class="bi bi-chevron-down text-xs"></i>
+                </button>
+                <div data-lang-panel class="hidden absolute right-0 mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-lg py-1 z-40 max-h-72 overflow-y-auto">
+                    <button type="button" th:each="l : ${supportedLanguages}" th:attr="data-lang=${l[0]}"
+                            th:classappend="${currentLang == l[0]} ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600'"
+                            class="w-full text-left block px-4 py-2 text-sm hover:bg-slate-50" th:text="${l[1]}">Language</button>
+                </div>
+            </div>
+        </header>
+
+        <div th:if="${toast}" id="toast"
+             class="mx-4 lg:mx-8 mt-4 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-800 text-sm shadow-card">
+            <i class="bi bi-check-circle-fill text-emerald-500"></i>
+            <span th:text="${toast}">Saved</span>
+        </div>
+        <div th:if="${error}"
+             class="mx-4 lg:mx-8 mt-4 flex items-center gap-3 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-800 text-sm shadow-card">
+            <i class="bi bi-exclamation-circle-fill text-rose-500"></i>
+            <span th:text="${error}">Error</span>
+        </div>
+
+        <main class="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-6">
+            <div layout:fragment="content">Content</div>
+        </main>
+
+        <footer class="px-4 lg:px-8 py-4 text-center text-xs text-slate-400 border-t border-slate-200/60">
+            Loanmust · Loan Agent (DSA) Management Platform
+        </footer>
+    </div>
+</div>
+
+<!-- ===== Mobile bottom navigation ===== -->
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200
+            flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]" th:with="am=${activeMenu}">
+    <a th:if="${perms == null or perms.canView('dashboard')}" th:href="@{/dashboard}" class="botnav" th:classappend="${am=='dashboard'} ? 'botnav-active' : ''">
+        <i class="bi bi-grid-1x2-fill"></i><span>Home</span></a>
+    <a th:if="${perms == null or perms.canView('leads')}" th:href="@{/leads}" class="botnav" th:classappend="${am=='leads'} ? 'botnav-active' : ''">
+        <i class="bi bi-funnel-fill"></i><span>Leads</span></a>
+    <a th:if="${perms == null or perms.canView('advisor')}" th:href="@{/advisor}" class="botnav" th:classappend="${am=='advisor'} ? 'botnav-active' : ''">
+        <i class="bi bi-bank"></i><span>Compare</span></a>
+    <a th:if="${perms == null or perms.canView('applications')}" th:href="@{/applications}" class="botnav" th:classappend="${am=='applications'} ? 'botnav-active' : ''">
+        <i class="bi bi-folder2-open"></i><span>Files</span></a>
+    <button type="button" id="moreBtn" class="botnav"><i class="bi bi-list"></i><span>Menu</span></button>
+</nav>
+
+<script th:src="@{/js/app.js}"></script>
+<th:block layout:fragment="scripts"></th:block>
+</body>
+</html>
