@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "loanmust-h2",
+      "runtimeExecutable": "mvn",
+      "runtimeArgs": ["-q", "spring-boot:run", "-Dspring-boot.run.useTestClasspath=true",
+        "-Dspring-boot.run.arguments=--server.port=8085 --spring.datasource.url=jdbc:h2:mem:loanmust;MODE=MariaDB;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1 --spring.datasource.username=sa --spring.datasource.password= --spring.datasource.driver-class-name=org.h2.Driver --spring.jpa.database-platform=org.hibernate.dialect.H2Dialect --spring.jpa.hibernate.ddl-auto=create-drop --spring.jpa.properties.hibernate.jdbc.time_zone=UTC --app.demo.seed-transactions=true --app.storage.local-dir=target/dev-storage --app.payout.overdue-cron=-"],
+      "port": 8085
+    }
+  ]
+}

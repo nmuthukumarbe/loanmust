@@ -15,7 +15,8 @@ tenant-scoped repositories, constructor injection, thin controllers, opaque URL 
 with the shared design tokens, six UI languages, MariaDB + Docker.
 
 See **[BUSINESS_USE_CASES.md](BUSINESS_USE_CASES.md)** for the full list of business use cases
-the application covers, screen by screen.
+the application covers, screen by screen, and **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)** for the
+staff user guide (how to use each screen).
 
 ---
 
@@ -109,9 +110,9 @@ Every role's screen access can be changed under **Administration → Roles & Per
 | Bank Payouts | `/commission` | DSA payout receivable per tranche; invoice, receipt, ₹1 reconciliation |
 | Finance & Fees | `/finance` | Money summary, 6-month trend, customer fee receipts (printable) |
 | Reports | `/reports` | 11 reports, all export to Excel |
-| Employees / Attendance | `/employees`, `/attendance` | Staff records, daily sheet, monthly register |
+| Employees / Attendance | `/employees`, `/attendance` | Staff records, daily sheet, monthly register (menu hidden for now; URLs still work) |
 | Administration | `/admin/users`, `/admin/roles`, `/audit`, `/settings` | Users, permission matrix, audit log, agency settings |
-| Public | `/refer/{code}`, `/p/{token}` | Referral enquiry form; customer-facing loan proposal |
+| Public | `/`, `/refer/{code}`, `/p/{token}` | Sri Sai Associates website with enquiry form (→ Website lead); referral enquiry form; customer-facing loan proposal |
 
 ---
 

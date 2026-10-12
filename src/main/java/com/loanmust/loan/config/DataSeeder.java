@@ -76,11 +76,11 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Seeding the demo agency, staff accounts, lender panel and role permissions...");
 
         Agency agency = new Agency();
-        agency.setName("Shree Finserv Loan Consultants");
-        agency.setTradeName("Shree Finserv");
+        agency.setName("Sri Sai Associates");
+        agency.setTradeName("Sri Sai Associates");
         agency.setOwnerName("Venkatesh Rao");
         agency.setEmail("hello@shreefinserv.in");
-        agency.setPhone("+919845011223");
+        agency.setPhone("+919944479708");
         agency.setDsaCode("DSA/BLR/0427");
         agency.setGstin("29ABCFS1234K1Z5");
         agency.setPan("ABCFS1234K");

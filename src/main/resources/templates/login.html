@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
-    <title>Sign in · Loanmust</title>
+    <title>Sign in · Sri Sai Associates</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
@@ -17,11 +17,18 @@
     </script>
     <link rel="stylesheet" th:href="@{/css/app.css}"/>
     <style>
-        .login-tab { display:inline-flex; align-items:center; justify-content:center; gap:.35rem;
-            padding:.5rem .4rem; border-radius:.6rem; font-size:.78rem; font-weight:600; color:#64748b;
-            background:transparent; border:0; cursor:pointer; transition:all .15s ease; white-space:nowrap; }
-        .login-tab:hover { color:#4338ca; }
-        .login-tab.is-active { background:#fff; color:#4f46e5; box-shadow:0 1px 2px rgba(16,24,40,.06); }
+        .desk-tab { display:flex; flex-direction:column; align-items:center; gap:.4rem; padding:.7rem .4rem;
+            border-radius:.85rem; border:1.5px solid #e2e8f0; background:#fff; font-size:.75rem; font-weight:600;
+            color:#475569; cursor:pointer; position:relative; transition:all .18s ease; }
+        .desk-tab:hover { border-color:#c7d2fe; transform:translateY(-1px); box-shadow:0 4px 12px rgba(79,70,229,.08); }
+        .desk-tab.is-active { border-color:#4f46e5; color:#312e81; background:#eef2ff; box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+        .desk-tab.is-active::after { content:"\F26A"; font-family:"bootstrap-icons"; position:absolute; top:.3rem; right:.4rem;
+            font-size:.8rem; color:#4f46e5; }
+        .desk-tab:focus-visible { outline:2px solid #4f46e5; outline-offset:2px; }
+        .desk-icon { height:2.1rem; width:2.1rem; border-radius:.65rem; display:grid; place-items:center; font-size:1.05rem; }
+        .desk-sub { animation: deskFade .25s ease; }
+        @keyframes deskFade { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
+        @media (prefers-reduced-motion: reduce) { .desk-tab, .desk-sub { transition:none; animation:none; } }
     </style>
 </head>
 <body class="font-sans bg-white text-ink min-h-screen">
@@ -36,7 +43,7 @@
         <div class="relative flex items-center gap-3">
             <img th:src="@{/favicon.svg}" alt="" class="h-11 w-11 rounded-xl ring-2 ring-white/20"/>
             <div class="leading-tight">
-                <p class="font-display font-extrabold text-2xl tracking-tight">Loan<span class="text-brand-200">must</span></p>
+                <p class="font-display font-extrabold text-2xl tracking-tight">Sri Sai <span class="text-brand-200">Associates</span></p>
                 <p class="text-xs text-white/70">Loan agent desk</p>
             </div>
         </div>
@@ -67,43 +74,56 @@
             </div>
         </div>
 
-        <p class="relative text-xs text-white/60">Loanmust · Loan agent (DSA) operations, digitised</p>
+        <p class="relative text-xs text-white/60">Sri Sai Associates · +91 99444 79708</p>
     </div>
 
     <!-- Right: form -->
     <div class="flex flex-col min-h-screen lg:min-h-0">
         <div class="flex items-center px-6 pt-6 lg:hidden">
             <img th:src="@{/favicon.svg}" alt="" class="h-9 w-9"/>
-            <p class="ml-2.5 font-display font-extrabold text-lg tracking-tight">Loan<span class="text-brand-600">must</span></p>
+            <p class="ml-2.5 font-display font-extrabold text-lg tracking-tight">Sri Sai <span class="text-brand-600">Associates</span></p>
         </div>
 
         <div class="flex-1 grid place-items-center px-6 py-10">
             <div class="w-full max-w-sm">
-                <h1 class="font-display font-extrabold text-2xl">Sign in</h1>
-                <p class="text-sm text-slate-500 mt-1" id="signinSub">Full access - leads, bank comparison, loan files, MODD, payouts and reports.</p>
+                <h1 class="font-display font-extrabold text-2xl">Welcome back</h1>
+                <p class="text-sm text-slate-500 mt-1">Sign in to the Sri Sai Associates staff desk.</p>
 
-                <!-- Role tabs: pick a desk to pre-fill the matching demo sign-in -->
-                <div class="mt-5 grid grid-cols-3 sm:grid-cols-5 gap-1 rounded-xl bg-slate-100 p-1" role="tablist">
-                    <button type="button" class="login-tab is-active" data-tab
-                            data-email="owner@shreefinserv.in" data-pass="owner123"
-                            data-sub="Full access - leads, bank comparison, loan files, MODD, payouts and reports.">
-                        <i class="bi bi-shield-shaded"></i> Owner</button>
-                    <button type="button" class="login-tab" data-tab
-                            data-email="executive@shreefinserv.in" data-pass="executive123"
-                            data-sub="Work your own leads, compare banks and share proposals.">
-                        <i class="bi bi-headset"></i> Executive</button>
-                    <button type="button" class="login-tab" data-tab
-                            data-email="processing@shreefinserv.in" data-pass="processing123"
-                            data-sub="Run loan files with the bank - documents, login, sanction, MODD and disbursement.">
-                        <i class="bi bi-folder2-open"></i> Processing</button>
-                    <button type="button" class="login-tab" data-tab
-                            data-email="dataentry@shreefinserv.in" data-pass="dataentry123"
-                            data-sub="Key in leads, customers and documents.">
-                        <i class="bi bi-keyboard"></i> Data entry</button>
-                    <button type="button" class="login-tab" data-tab
-                            data-email="finance@shreefinserv.in" data-pass="finance123"
-                            data-sub="Fee receipts, bank payouts and referral partner payouts.">
-                        <i class="bi bi-cash-stack"></i> Finance</button>
+                <!-- Desk picker (demo only): choose a role to pre-fill its demo sign-in -->
+                <div th:if="${demoLogins}" class="mt-6">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Choose your desk</p>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-50 text-amber-700 px-2 py-0.5">Demo</span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-3 gap-2" role="tablist" aria-label="Sign in as">
+                        <button type="button" role="tab" aria-selected="true" class="desk-tab is-active" data-tab
+                                data-email="owner@shreefinserv.in" data-pass="owner123"
+                                data-sub="Full access - leads, bank comparison, loan files, MODD, payouts and reports.">
+                            <span class="desk-icon bg-indigo-50 text-indigo-600"><i class="bi bi-shield-shaded"></i></span>Owner</button>
+                        <button type="button" role="tab" aria-selected="false" class="desk-tab" data-tab
+                                data-email="manager@shreefinserv.in" data-pass="manager123"
+                                data-sub="All leads and loan files; assigns work and approves referral payouts.">
+                            <span class="desk-icon bg-violet-50 text-violet-600"><i class="bi bi-diagram-3"></i></span>Manager</button>
+                        <button type="button" role="tab" aria-selected="false" class="desk-tab" data-tab
+                                data-email="executive@shreefinserv.in" data-pass="executive123"
+                                data-sub="Work your own leads, compare banks and share proposals.">
+                            <span class="desk-icon bg-sky-50 text-sky-600"><i class="bi bi-headset"></i></span>Executive</button>
+                        <button type="button" role="tab" aria-selected="false" class="desk-tab" data-tab
+                                data-email="processing@shreefinserv.in" data-pass="processing123"
+                                data-sub="Run loan files with the bank - documents, login, sanction, MODD and disbursement.">
+                            <span class="desk-icon bg-amber-50 text-amber-600"><i class="bi bi-folder2-open"></i></span>Processing</button>
+                        <button type="button" role="tab" aria-selected="false" class="desk-tab" data-tab
+                                data-email="dataentry@shreefinserv.in" data-pass="dataentry123"
+                                data-sub="Key in leads, customers and documents.">
+                            <span class="desk-icon bg-teal-50 text-teal-600"><i class="bi bi-keyboard"></i></span>Data entry</button>
+                        <button type="button" role="tab" aria-selected="false" class="desk-tab" data-tab
+                                data-email="finance@shreefinserv.in" data-pass="finance123"
+                                data-sub="Fee receipts, bank payouts and referral partner payouts.">
+                            <span class="desk-icon bg-emerald-50 text-emerald-600"><i class="bi bi-cash-stack"></i></span>Finance</button>
+                    </div>
+                    <p class="desk-sub mt-3 flex gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-600" aria-live="polite">
+                        <i class="bi bi-info-circle text-brand-600"></i><span id="signinSub">Full access - leads, bank comparison, loan files, MODD, payouts and reports.</span>
+                    </p>
                 </div>
 
                 <div th:if="${param.error}" class="mt-5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
@@ -119,27 +139,30 @@
                 <form th:action="@{/login}" method="post" class="mt-6 space-y-4">
                     <div>
                         <label class="form-label" for="email">Email address</label>
-                        <input type="email" id="email" name="email" required autofocus autocomplete="username"
-                               class="form-input" placeholder="you@agency.in"/>
+                        <div class="relative">
+                            <i class="bi bi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="email" id="email" name="email" required autofocus autocomplete="username"
+                                   class="form-input pl-9" placeholder="you@srisaiassociates.in"/>
+                        </div>
                     </div>
                     <div>
                         <label class="form-label" for="password">Password</label>
-                        <input type="password" id="password" name="password" required autocomplete="current-password"
-                               class="form-input" placeholder="Your password"/>
+                        <div class="relative">
+                            <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="password" id="password" name="password" required autocomplete="current-password"
+                                   class="form-input pl-9 pr-10" placeholder="Your password"/>
+                            <button type="button" id="togglePass" aria-label="Show password"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-lg text-slate-400 hover:text-brand-600">
+                                <i class="bi bi-eye"></i></button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-full">
+                    <button type="submit" class="btn btn-primary w-full justify-center py-2.5">
                         <i class="bi bi-box-arrow-in-right"></i> Sign in
                     </button>
                 </form>
 
-                <div class="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                    <p class="font-semibold text-slate-600 mb-1">Demo sign-in</p>
-                    <p>owner@shreefinserv.in / owner123</p>
-                    <p>executive@shreefinserv.in / executive123</p>
-                    <p>processing@shreefinserv.in / processing123</p>
-                    <p>dataentry@shreefinserv.in / dataentry123</p>
-                    <p>finance@shreefinserv.in / finance123</p>
-                </div>
+                <a th:href="@{/}" class="mt-6 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600">
+                    <i class="bi bi-arrow-left"></i> Back to website</a>
             </div>
         </div>
     </div>
@@ -152,14 +175,28 @@
         var emailEl = document.getElementById('email');
         var passEl = document.getElementById('password');
         var subEl = document.getElementById('signinSub');
-        tabs.forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                tabs.forEach(function (t) { t.classList.remove('is-active'); });
-                tab.classList.add('is-active');
-                if (emailEl) emailEl.value = tab.getAttribute('data-email');
-                if (passEl) passEl.value = tab.getAttribute('data-pass');
-                if (subEl) subEl.textContent = tab.getAttribute('data-sub');
-            });
+        function pick(tab) {
+            tabs.forEach(function (t) { t.classList.remove('is-active'); t.setAttribute('aria-selected', 'false'); });
+            tab.classList.add('is-active');
+            tab.setAttribute('aria-selected', 'true');
+            if (emailEl) emailEl.value = tab.getAttribute('data-email');
+            if (passEl) passEl.value = tab.getAttribute('data-pass');
+            if (subEl) {
+                subEl.parentNode.classList.remove('desk-sub'); void subEl.parentNode.offsetWidth;
+                subEl.parentNode.classList.add('desk-sub');
+                subEl.textContent = tab.getAttribute('data-sub');
+            }
+        }
+        tabs.forEach(function (tab) { tab.addEventListener('click', function () { pick(tab); }); });
+        var first = document.querySelector('[data-tab].is-active');
+        if (first && emailEl && !emailEl.value) pick(first);
+
+        var toggle = document.getElementById('togglePass');
+        if (toggle && passEl) toggle.addEventListener('click', function () {
+            var show = passEl.type === 'password';
+            passEl.type = show ? 'text' : 'password';
+            toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            toggle.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
         });
     })();
 </script>

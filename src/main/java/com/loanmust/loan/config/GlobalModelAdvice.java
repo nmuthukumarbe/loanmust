@@ -11,6 +11,7 @@ import com.loanmust.loan.tenant.Agency;
 import com.loanmust.loan.tenant.AgencyRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -43,6 +44,16 @@ public class GlobalModelAdvice {
         this.currencyCode = currencyCode;
     }
 
+    /**
+     * Resolve the CSRF token before the view renders. The token lives in the HTTP session;
+     * on a long public page (the website) the response is already committed by the time
+     * Thymeleaf reaches the form, and creating the session then fails mid-page.
+     */
+    @ModelAttribute
+    public void loadCsrfToken(CsrfToken csrfToken) {
+        if (csrfToken != null) csrfToken.getToken();
+    }
+
     @ModelAttribute
     public void addGlobals(Model model) {
         model.addAttribute("enc", idCodec);   // ${enc.encode(x.id)} builds opaque URL ids
@@ -52,7 +63,7 @@ public class GlobalModelAdvice {
         model.addAttribute("supportedLanguages", WebConfig.LANGUAGES);
         model.addAttribute("currentLang", LocaleContextHolder.getLocale().getLanguage());
         // Safe defaults so the layout never evaluates a null.
-        model.addAttribute("currentAgencyName", "Loanmust");
+        model.addAttribute("currentAgencyName", "Sri Sai Associates");
         model.addAttribute("accentColor", "indigo");
         model.addAttribute("brandPalette", AccentPalette.INDIGO.shades());
         model.addAttribute("isAdministrator", Boolean.FALSE);

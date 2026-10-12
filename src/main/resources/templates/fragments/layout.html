@@ -7,7 +7,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
-    <title layout:title-pattern="$CONTENT_TITLE · Loanmust">Loanmust</title>
+    <title layout:title-pattern="$CONTENT_TITLE · Sri Sai Associates">Sri Sai Associates</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -86,7 +86,7 @@
         <div class="h-16 flex items-center gap-2.5 px-5 border-b border-slate-100">
             <img th:src="@{/favicon.svg}" alt="" class="h-9 w-9"/>
             <div class="leading-tight">
-                <p class="font-display font-extrabold text-lg tracking-tight">Loan<span class="text-brand-600">must</span></p>
+                <p class="font-display font-extrabold text-lg tracking-tight">Sri Sai <span class="text-brand-600">Associates</span></p>
                 <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Loan agent desk</p>
             </div>
         </div>
@@ -138,11 +138,7 @@
             <a th:if="${perms == null or perms.canView('reports')}" th:href="@{/reports}" th:classappend="${am=='reports'} ? 'nav-active' : ''" class="nav-link">
                 <i class="bi bi-graph-up-arrow"></i><span th:text="#{menu.reports}">Reports</span></a>
 
-            <p class="nav-section" sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:text="#{menu.section.people}">People</p>
-            <a sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:if="${perms == null or perms.canView('employees')}" th:href="@{/employees}" th:classappend="${am=='employees'} ? 'nav-active' : ''" class="nav-link">
-                <i class="bi bi-person-vcard"></i><span th:text="#{menu.employees}">Employees</span></a>
-            <a sec:authorize="hasAnyRole('OWNER','ADMIN','MANAGER')" th:if="${perms == null or perms.canView('attendance')}" th:href="@{/attendance}" th:classappend="${am=='attendance'} ? 'nav-active' : ''" class="nav-link">
-                <i class="bi bi-calendar-check"></i><span th:text="#{menu.attendance}">Attendance</span></a>
+            <!-- HR menus (Employees, Attendance) hidden for now; the screens still exist. -->
 
             <p class="nav-section" th:if="${isAdministrator}" th:text="#{menu.section.admin}">Administration</p>
             <a th:if="${isAdministrator}" th:href="@{/admin/users}" th:classappend="${am=='admin'} ? 'nav-active' : ''" class="nav-link">
@@ -240,7 +236,7 @@
         </main>
 
         <footer class="px-4 lg:px-8 py-4 text-center text-xs text-slate-400 border-t border-slate-200/60">
-            Loanmust · Loan Agent (DSA) Management Platform
+            Sri Sai Associates · +91 99444 79708
         </footer>
     </div>
 </div>

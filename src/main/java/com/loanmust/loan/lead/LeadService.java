@@ -202,6 +202,32 @@ public class LeadService {
         return saved;
     }
 
+    /** An enquiry from the public website - lands as a NEW lead for follow-up today. */
+    @Transactional
+    public Lead captureWebsite(Long tenantId, String name, String mobile, String city,
+                               LoanType loanType, BigDecimal amount, String note) {
+        Lead lead = new Lead();
+        lead.setTenantId(tenantId);
+        lead.setCode(codeSequenceService.next(tenantId, CodeSequenceService.Type.LEAD, leadRepository.countByTenantId(tenantId)));
+        lead.setCreatedBy("website");
+        lead.setName(trim(name));
+        lead.setMobile(trim(mobile));
+        lead.setCity(trim(city));
+        lead.setLoanType(loanType == null ? LoanType.HOME_LOAN : loanType);
+        lead.setLoanAmountRequired(amount);
+        lead.setRequirement(note);
+        lead.setSource(LeadSource.WEBSITE);
+        lead.setStatus(LeadStatus.NEW);
+        lead.setNextFollowUpDate(LocalDate.now());
+        lead.setFollowUpCount(0);
+        detectDuplicate(tenantId, lead);
+        Lead saved = leadRepository.save(lead);
+        rescore(tenantId, saved);
+        saved = leadRepository.save(saved);
+        auditService.logFor(tenantId, "CREATE", "Lead", saved.getId(), saved.getName(), "Submitted through the website");
+        return saved;
+    }
+
     @Transactional
     public LeadActivity addActivity(Long tenantId, Long leadId, LeadActivity form, LeadStatus newStatus) {
         Lead lead = get(tenantId, leadId);

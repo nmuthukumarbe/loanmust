@@ -59,7 +59,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/css/**", "/js/**", "/images/**", "/favicon.ico", "/favicon.svg",
-                        "/login", "/error", "/", "/refer/**", "/p/**", "/no-access",
+                        "/login", "/error", "/", "/enquiry", "/refer/**", "/p/**", "/no-access",
                         "/actuator/health", "/actuator/health/**").permitAll()
                 // Administration is limited to Owner and Admin.
                 .requestMatchers("/admin/**", "/settings/**", "/audit/**").hasAnyRole("OWNER", "ADMIN")

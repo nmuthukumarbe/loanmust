@@ -200,6 +200,15 @@ class ApplicationSmokeTest {
         mvc.perform(get("/p/not-a-real-token-at-all")).andExpect(status().isOk());
         mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection());
         mvc.perform(get("/login")).andExpect(status().isOk());
+
+        // Public website and its enquiry form.
+        mvc.perform(get("/")).andExpect(status().isOk());
+        long beforeWeb = leads.countByTenantId(tenantId);
+        mvc.perform(post("/enquiry").with(csrf())
+                        .param("name", "Website Visitor").param("mobile", "9123456789").param("loanType", "LAP"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(leads.countByTenantId(tenantId)).isEqualTo(beforeWeb + 1);
+        mvc.perform(get("/").param("thanks", "")).andExpect(status().isOk());
     }
 
     @Test
